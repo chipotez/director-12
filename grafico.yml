@@ -1,0 +1,25 @@
+---
+- name: Configuración de Equipo
+  hosts: oracle
+  remote_user: root
+  vars:
+    - redhatpass: "$6$lf92fiDijp1G.mK6$plOZCrslpetoybLUIhs5jgfx2OqTvnl93/Tz0KgJavQtQq4u9TJJtYTzZmwu2Xi4oFy1S.MvjaRw.VU.r0fId/"
+  tasks:
+    - name: Install all my packages
+      yum: name='@Server with GUI' state=lastest
+      
+    - name: Instalando paquetes para Oracle.
+      yum: pkg={{item}} state=installed
+      with_items:
+        - tigervnc-server
+        - xorg-x11-fonts-Type1
+    - name: Creando usuario Red Hat.
+      user:
+        name: redhat
+        password: '{{ redhatpass }}'
+        
+    - copy:
+        src: /lib/systemd/system/vncserver@.service
+        dest: /etc/systemd/system/vncserver@:3.service
+        owner: oracle
+        remote_src: yes
