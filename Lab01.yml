@@ -1,0 +1,488 @@
+[Undercloud-root]
+hostname
+hostnamectl set-hostname undercloud.example.com
+systemctl restart network.service
+yum -y install facter
+subscription-manager register
+subscription-manager attach --pool=8a85f9815dbd9297015dbdb8186b428d
+sudo subscription-manager repos --disable=* 
+useradd stack
+echo 'r3dh4t1!' | passwd --stdin stack
+echo "stack ALL=(root) NOPASSWD:ALL" | tee -a /etc/sudoers.d/stack
+chmod 0440 /etc/sudoers.d/stack
+
+[Undercloud-stack]
+mkdir ~/images
+mkdir ~/templates
+hostname
+hostname -f
+sudo hostnamectl set-hostname undercloud.example.com
+sudo hostnamectl set-hostname --transient undercloud.example.com
+sudo vi /etc/hosts
+    127.0.0.1   undercloud.example.com localhost localhost.localdomain localhost4 localhost4.localdomain4 
+sudo subscription-manager repos --enable=rhel-7-server-rpms --enable=rhel-7-server-extras-rpms --enable=rhel-7-server-rh-common-rpms --enable=rhel-ha-for-rhel-7-server-rpms --enable=rhel-7-server-openstack-11-rpms
+sudo yum update -y
+sudo reboot
+[root@kvm ~]# ssh-copy-id stack@undercloud
+/usr/bin/ssh-copy-id: INFO: Source of key(s) to be installed: "/root/.ssh/id_ed25519.pub"
+/usr/bin/ssh-copy-id: INFO: attempting to log in with the new key(s), to filter out any that are already installed
+/usr/bin/ssh-copy-id: INFO: 1 key(s) remain to be installed -- if you are prompted now it is to install the new keys
+stack@undercloud's password: 
+
+Number of key(s) added: 1
+
+Now try logging into the machine, with:   "ssh 'stack@undercloud'"
+and check to make sure that only the key(s) you wanted were added.
+
+[root@kvm ~]# ssh stack@undercloud
+Last login: Sun Nov 26 14:34:42 2017
+
+sudo yum -y install libvirt libguestfs-tools
+sudo yum install -y python-tripleoclient
+cp /usr/share/instack-undercloud/undercloud.conf.sample ~/undercloud.conf
+[DEFAULT]
+undercloud_hostname = undercloud.example.com
+local_ip = 172.16.0.1/24
+network_gateway = 172.16.0.1
+undercloud_public_host = 172.16.0.10
+undercloud_admin_host = 172.16.0.11
+undercloud_nameservers = 8.8.8.8
+undercloud_ntp_servers = 0.rhel.pool.ntp.org
+generate_service_certificate = true
+certificate_generation_ca = local
+local_interface = eth0
+network_cidr = 172.16.0.0/24
+masquerade_network = 172.16.0.0/24
+dhcp_start = 172.16.0.20
+dhcp_end = 172.16.0.120
+#inspection_interface = br-ctlplane
+inspection_iprange = 172.16.0.150,172.16.0.180
+#inspection_enable_uefi = true
+#discovery_default_driver = pxe_ipmitool
+undercloud_debug = true
+enable_telemetry = false
+enable_ui = true
+enable_validations = true
+#enable_legacy_ceilometer_api = true
+#enable_novajoin = false
+#ipxe_enabled = true
+enabled_drivers = pxe_ipmitool,pxe_ssh,pxe_drac,pxe_ilo,fake_pxe
+
+#local_ip = 172.16.0.1/24
+#undercloud_public_vip = 172.16.0.10
+#undercloud_admin_vip = 172.16.0.11
+#local_interface = eth0
+#masquerade_network = 172.16.0.0/24
+#dhcp_start = 172.16.0.20
+#dhcp_end = 172.16.0.120
+#network_cidr = 172.16.0.0/24
+#network_gateway = 172.16.0.1
+#discovery_iprange = 172.16.0.150,172.16.0.180
+#enable_telemetry = false
+
+[auth]
+
+#
+# From instack-undercloud
+#
+
+# Password used for MySQL databases. If left unset, one will be
+# automatically generated. (string value)
+#undercloud_db_password = <None>
+
+# Keystone admin token. If left unset, one will be automatically
+# generated. (string value)
+#undercloud_admin_token = <None>
+
+# Keystone admin password. If left unset, one will be automatically
+# generated. (string value)
+undercloud_admin_password = redhat2017
+
+# Glance service password. If left unset, one will be automatically
+# generated. (string value)
+#undercloud_glance_password = <None>
+
+# Heat db encryption key(must be 16, 24, or 32 characters. If left
+# unset, one will be automatically generated. (string value)
+#undercloud_heat_encryption_key = <None>
+
+# Heat service password. If left unset, one will be automatically
+# generated. (string value)
+#undercloud_heat_password = <None>
+
+# Heat cfn service password. If left unset, one will be automatically
+# generated. (string value)
+#undercloud_heat_cfn_password = <None>
+
+# Neutron service password. If left unset, one will be automatically
+# generated. (string value)
+#undercloud_neutron_password = <None>
+
+# Nova service password. If left unset, one will be automatically
+# generated. (string value)
+#undercloud_nova_password = <None>
+
+# Ironic service password. If left unset, one will be automatically
+# generated. (string value)
+#undercloud_ironic_password = <None>
+
+# Aodh service password. If left unset, one will be automatically
+# generated. (string value)
+#undercloud_aodh_password = <None>
+
+# Gnocchi service password. If left unset, one will be automatically
+# generated. (string value)
+#undercloud_gnocchi_password = <None>
+
+# Ceilometer service password. If left unset, one will be
+# automatically generated. (string value)
+#undercloud_ceilometer_password = <None>
+
+# Panko service password. If left unset, one will be automatically
+# generated. (string value)
+#undercloud_panko_password = <None>
+
+# Ceilometer metering secret. If left unset, one will be automatically
+# generated. (string value)
+#undercloud_ceilometer_metering_secret = <None>
+
+# Ceilometer snmpd read-only user. If this value is changed from the
+# default, the new value must be passed in the overcloud environment
+# as the parameter SnmpdReadonlyUserName. This value must be between 1
+# and 32 characters long. (string value)
+#undercloud_ceilometer_snmpd_user = ro_snmp_user
+
+# Ceilometer snmpd password. If left unset, one will be automatically
+# generated. (string value)
+#undercloud_ceilometer_snmpd_password = <None>
+
+# Swift service password. If left unset, one will be automatically
+# generated. (string value)
+#undercloud_swift_password = <None>
+
+# Mistral service password. If left unset, one will be automatically
+# generated. (string value)
+#undercloud_mistral_password = <None>
+
+# Rabbitmq cookie. If left unset, one will be automatically generated.
+# (string value)
+#undercloud_rabbit_cookie = <None>
+
+# Rabbitmq password. If left unset, one will be automatically
+# generated. (string value)
+#undercloud_rabbit_password = <None>
+
+# Rabbitmq username. If left unset, one will be automatically
+# generated. (string value)
+#undercloud_rabbit_username = <None>
+
+# Heat stack domain admin password. If left unset, one will be
+# automatically generated. (string value)
+#undercloud_heat_stack_domain_admin_password = <None>
+
+# Swift hash suffix. If left unset, one will be automatically
+# generated. (string value)
+#undercloud_swift_hash_suffix = <None>
+
+# HAProxy stats password. If left unset, one will be automatically
+# generated. (string value)
+#undercloud_haproxy_stats_password = <None>
+
+# Zaqar password. If left unset, one will be automatically generated.
+# (string value)
+#undercloud_zaqar_password = <None>
+
+# Horizon secret key. If left unset, one will be automatically
+# generated. (string value)
+#undercloud_horizon_secret_key = <None>
+
+# Cinder service password. If left unset, one will be automatically
+# generated. (string value)
+#undercloud_cinder_password = <None>
+
+
+
+
+openstack undercloud install
+#############################################################################
+instack-install-undercloud complete.
+
+The file containing this installation's passwords is at
+/home/stack/undercloud-passwords.conf.
+
+There is also a stackrc file at /home/stack/stackrc.
+
+These files are needed to interact with the OpenStack services, and should be
+secured.
+
+#############################################################################
+
+
+
+[stack@undercloud ~]$ ls -la /usr/share/instack-undercloud/puppet-stack-config
+
+total 76
+drwxr-xr-x.  6 root root   229 nov 26 14:52 .
+drwxr-xr-x. 10 root root   216 nov 26 14:52 ..
+-rw-r--r--.  1 root root    21 abr 27  2017 element-deps
+drwxr-xr-x.  2 root root    28 nov 26 14:52 extra-data.d
+drwxr-xr-x.  2 root root    80 nov 26 14:52 install.d
+drwxr-xr-x.  3 root root    17 nov 26 14:52 os-apply-config
+drwxr-xr-x.  4 root root    49 nov 26 14:52 os-refresh-config
+-rw-r--r--.  1 root root    52 abr 27  2017 package-installs.yaml
+-rw-r--r--.  1 root root 23206 abr 27  2017 puppet-stack-config.pp
+-rw-r--r--.  1 root root 40595 abr 27  2017 puppet-stack-config.yaml.template
+-rw-r--r--.  1 root root   345 abr 27  2017 README.rst
+
+[stack@undercloud ~]$ ls -la /usr/share/instack-undercloud/puppet-stack-config/install.d
+total 8
+drwxr-xr-x. 2 root root   80 nov 26 14:52 .
+drwxr-xr-x. 6 root root  229 nov 26 14:52 ..
+-rwxr-xr-x. 1 root root 1717 abr 27  2017 02-puppet-stack-config
+-rwxr-xr-x. 1 root root  158 abr 27  2017 10-puppet-stack-config-puppet-module
+
+[stack@undercloud ~]$ head -n4 /usr/share/instack-undercloud/puppet-stack-config/puppet-stack-config.yaml.template
+keystone_identity_uri: {{UNDERCLOUD_ENDPOINT_KEYSTONE_ADMIN}}
+keystone_auth_uri: {{UNDERCLOUD_ENDPOINT_KEYSTONE_PUBLIC}}/v3
+keystone_auth_uri_v2: {{UNDERCLOUD_ENDPOINT_KEYSTONE_PUBLIC}}/v2.0
+keystone_region: 'regionOne'
+
+
+source ~/stackrc
+openstack catalog list
++-------------+-----------+---------------------------------------------------+
+| Name        | Type      | Endpoints                                         |
++-------------+-----------+---------------------------------------------------+
+| nova        | compute   | regionOne                                         |
+|             |           |   publicURL: http://172.16.0.1:8774/v2.1          |
+|             |           |   internalURL: http://172.16.0.1:8774/v2.1        |
+|             |           |   adminURL: http://172.16.0.1:8774/v2.1           |
+|             |           |                                                   |
+| neutron     | network   | regionOne                                         |
+|             |           |   publicURL: http://172.16.0.1:9696               |
+|             |           |   internalURL: http://172.16.0.1:9696             |
+|             |           |   adminURL: http://172.16.0.1:9696                |
+
+
+[stack@undercloud ~]$ ssh-copy-id stack@192.168.0.1
+
+
+virsh -c qemu+ssh://stack@192.168.0.1/system list
+ Id    Name                           State
+----------------------------------------------------
+ 12    undercloud                     running
+ 
+ [stack@undercloud ~]$ source ~/stackrc
+[stack@undercloud ~]$ openstack service list
++----------------------------------+------------------+-------------------------+
+| ID                               | Name             | Type                    |
++----------------------------------+------------------+-------------------------+
+| 077af8cdc100439eb1d2cbd3d83f429e | heat             | orchestration           |
+| 168233fb1da34386b68dc4ee813cb3cc | keystone         | identity                |
+| 2f970bef291e43e391db3dfe203288a0 | heat-cfn         | cloudformation          |
+| 36f47cf81dda43509728fba7e300f75e | swift            | object-store            |
+| 3782edf2a39f478486bdb1c0cfcfdae5 | glance           | image                   |
+| 51d709d503c74627a7b4e4de78cec7c2 | ironic           | baremetal               |
+| 76d05302dd7d46ff8f32efeada6e8b52 | nova             | compute                 |
+| 9f0ede15b5f44cfc8bd47065718672b1 | zaqar            | messaging               |
+| b6a68245e9624e058ecad11bd2acb3d4 | zaqar-websocket  | messaging-websocket     |
+| bc5bca8a74114c38908b6b2d216260c5 | ironic-inspector | baremetal-introspection |
+| c55208eadeed4f26a2fea860d3d54d80 | mistral          | workflowv2              |
+| d7fc5728dd8e48c68946fe0829803c50 | neutron          | network                 |
+| fd857f46f6b947d696f695735fd97648 | placement        | placement               |
++----------------------------------+------------------+-------------------------+
+ 
+ 
+ 
+ [stack@undercloud ~]$ tail -n5 ~/undercloud-passwords.conf
+undercloud_swift_hash_suffix=e521ed35b6e7d7aa24e871131377026893535330
+undercloud_haproxy_stats_password=cdf05025743f103af1051ad336d5214d3ae8ad53
+undercloud_zaqar_password=e3e53ea2b350d175a7dcf2c99b5f2312fcc6cf80
+undercloud_horizon_secret_key=e76f1224dbb9a5675c641d1929862c7234ed527c
+undercloud_cinder_password=4bf7b2eeba3229df0dcd3138d4cb4a28ea9a6d88
+ 
+ 
+ 
+ 
+ python -m json.tool /etc/os-net-config/config.json
+ sudo ovs-vsctl show
+ cat /etc/sysconfig/network-scripts/ifcfg-br-ctlplane
+ ip addr show br-ctlplane
+ curl -s http://172.16.0.1:9696 | python -m json.tool
+ grep ironic::inspector /usr/share/instack-undercloud/puppet-stack-config/puppet-stack-config.yaml.template
+ cat /etc/ironic-inspector/dnsmasq.conf
+ 
+ 
+ [stack@undercloud ~]$ source ~/stackrc
+[stack@undercloud ~]$ neutron subnet-list
+neutron CLI is deprecated and will be removed in the future. Use openstack CLI instead.
++--------------------------------------+-----------------+----------------------------------+---------------+-------------------------------------------------+
+| id                                   | name            | tenant_id                        | cidr          | allocation_pools                                |
++--------------------------------------+-----------------+----------------------------------+---------------+-------------------------------------------------+
+| 28b9a385-84de-4910-8f43-80e5a24fb77b | ctlplane-subnet | b10bdc241d414e0391e8005cd4259980 | 172.16.0.0/24 | {"start": "172.16.0.20", "end": "172.16.0.120"} |
++--------------------------------------+-----------------+----------------------------------+---------------+-------------------------------------------------+
+[stack@undercloud ~]$ subnet_id=$(neutron subnet-list | awk '/172.16.0.0/ { print $2 }')
+neutron CLI is deprecated and will be removed in the future. Use openstack CLI instead.
+[stack@undercloud ~]$ neutron subnet-show $subnet_id
+neutron CLI is deprecated and will be removed in the future. Use openstack CLI instead.
++-------------------+----------------------------------------------------------------+
+| Field             | Value                                                          |
++-------------------+----------------------------------------------------------------+
+| allocation_pools  | {"start": "172.16.0.20", "end": "172.16.0.120"}                |
+| cidr              | 172.16.0.0/24                                                  |
+| created_at        | 2017-11-26T20:37:25Z                                           |
+| description       |                                                                |
+| dns_nameservers   |                                                                |
+| enable_dhcp       | True                                                           |
+| gateway_ip        | 172.16.0.1                                                     |
+| host_routes       | {"destination": "169.254.169.254/32", "nexthop": "172.16.0.1"} |
+| id                | 28b9a385-84de-4910-8f43-80e5a24fb77b                           |
+| ip_version        | 4                                                              |
+| ipv6_address_mode |                                                                |
+| ipv6_ra_mode      |                                                                |
+| name              | ctlplane-subnet                                                |
+| network_id        | c21fa342-d34f-4104-998c-4ca8701a2d43                           |
+| project_id        | b10bdc241d414e0391e8005cd4259980                               |
+| revision_number   | 2                                                              |
+| service_types     |                                                                |
+| subnetpool_id     |                                                                |
+| tags              |                                                                |
+| tenant_id         | b10bdc241d414e0391e8005cd4259980                               |
+| updated_at        | 2017-11-26T20:37:25Z                                           |
++-------------------+----------------------------------------------------------------+
+ 
+ 
+ 
+ [stack@undercloud ~]$ sudo ip netns list
+qdhcp-c21fa342-d34f-4104-998c-4ca8701a2d43
+
+
+
+[stack@undercloud ~]$ netns=$(ip netns list | grep qdhcp)
+[stack@undercloud ~]$ sudo ip netns exec $netns netstat -tunpl
+Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name    
+tcp        0      0 172.16.0.20:53          0.0.0.0:*               LISTEN      12191/dnsmasq       
+tcp6       0      0 fe80::f816:3eff:fecd:53 :::*                    LISTEN      12191/dnsmasq       
+udp        0      0 172.16.0.20:53          0.0.0.0:*                           12191/dnsmasq       
+udp        0      0 0.0.0.0:67              0.0.0.0:*                           12191/dnsmasq       
+udp6       0      0 fe80::f816:3eff:fecd:53 :::*                                12191/dnsmasq  
+ 
+ 
+cd /usr/share/openstack-tripleo-validations/validations
+run-validation undercloud-ram.yaml ~/.ssh/id_rsa
+
+[stack@undercloud validations]$ run-validation undercloud-disk-space.yaml ~/.ssh/id_rsa
+[DEPRECATION WARNING]: DEFAULT_SUDO_FLAGS option, In favor of become which is a generic framework . This feature will be removed in version 2.8. Deprecation warnings can be disabled by 
+setting deprecation_warnings=False in ansible.cfg.
+ [WARNING]: when statements should not include jinja2 templating delimiters such as {{ }} or {% %}. Found: '/var' == '{{ item.mount }}'
+
+ [WARNING]: when statements should not include jinja2 templating delimiters such as {{ }} or {% %}. Found: {{ not previous.changed }} and '/' == '{{ item.mount }}'
+
+ [WARNING]: when statements should not include jinja2 templating delimiters such as {{ }} or {% %}. Found: {{ min_undercloud_disk_gb|int * const_bytes_in_gb|int }} >= {{
+item.size_available|int }}
+
+Task 'Verify root disk space' failed:
+Host: localhost
+Message: The available space on the root partition is 4.4 GB, but it should be at least 60 GB.
+
+Failure! The validation failed for all hosts:
+* localhost
+
+
+
+
+
+
+
+
+
+
+
+[root@undercloud ~]# fdisk /dev/vda
+Welcome to fdisk (util-linux 2.23.2).
+
+Changes will remain in memory only, until you decide to write them.
+Be careful before using the write command.
+
+
+Orden (m para obtener ayuda): p
+
+Disk /dev/vda: 64.4 GB, 64424509440 bytes, 125829120 sectors
+Units = sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disk label type: dos
+Identificador del disco: 0x000a73bb
+
+Disposit. Inicio    Comienzo      Fin      Bloques  Id  Sistema
+/dev/vda1            2048   125829119    62913536   83  Linux
+
+Orden (m para obtener ayuda): d
+Selected partition 1
+Partition 1 is deleted
+
+Orden (m para obtener ayuda): p
+
+Disk /dev/vda: 64.4 GB, 64424509440 bytes, 125829120 sectors
+Units = sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disk label type: dos
+Identificador del disco: 0x000a73bb
+
+Disposit. Inicio    Comienzo      Fin      Bloques  Id  Sistema
+
+Orden (m para obtener ayuda): n
+Partition type:
+   p   primary (0 primary, 0 extended, 4 free)
+   e   extended
+Select (default p): 
+Using default response p
+Número de partición (1-4, default 1): 
+Primer sector (2048-125829119, valor predeterminado 2048): 
+Se está utilizando el valor predeterminado 2048
+Last sector, +sectors or +size{K,M,G} (2048-125829119, valor predeterminado 125829119): 
+Se está utilizando el valor predeterminado 125829119
+Partition 1 of type Linux and of size 60 GiB is set
+
+Orden (m para obtener ayuda): w
+¡Se ha modificado la tabla de particiones!
+
+Llamando a ioctl() para volver a leer la tabla de particiones.
+
+WARNING: Re-reading the partition table failed with error 16: Dispositivo o recurso ocupado.
+The kernel still uses the old table. The new table will be used at
+the next reboot or after you run partprobe(8) or kpartx(8)
+Se están sincronizando los discos.
+ 
+
+[root@undercloud ~]# xfs_growfs /
+meta-data=/dev/vda1              isize=512    agcount=4, agsize=512000 blks
+         =                       sectsz=512   attr=2, projid32bit=1
+         =                       crc=1        finobt=0 spinodes=0
+data     =                       bsize=4096   blocks=2048000, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0 ftype=1
+log      =internal               bsize=4096   blocks=2560, version=2
+         =                       sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+data blocks changed from 2048000 to 15728384
+
+
+[root@undercloud ~]# df -h
+S.ficheros     Tamaño Usados  Disp Uso% Montado en
+/dev/vda1         60G   3.5G   57G   6% /
+devtmpfs         7.8G      0  7.8G   0% /dev
+tmpfs            7.8G   4.0K  7.8G   1% /dev/shm
+tmpfs            7.8G   468K  7.8G   1% /run
+tmpfs            7.8G      0  7.8G   0% /sys/fs/cgroup
+tmpfs            1.6G      0  1.6G   0% /run/user/0
+ 
+ 
+ 
+ 
+ 
+
+
+

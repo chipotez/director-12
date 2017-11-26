@@ -31,7 +31,7 @@
         systemctl start vncserver@:3.service
         systemctl enable vncserver@:3.service
         
-        
+        subscription-manager register
         subscription-manager attach --pool=8a85f9815dbd9297015dbdb8186b428d 
         sudo subscription-manager repos --disable=* 
         sudo subscription-manager repos --enable=rhel-7-server-rpms --enable=rhel-7-server-extras-rpms --enable=rhel-7-server-rh-common-rpms
