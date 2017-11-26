@@ -2,12 +2,12 @@
 
 KVM_SERVER=192.168.0.2
 IMAGES_DIR=/var/lib/libvirt/images
-IMAGE_NAME=rhel7-guest-official.qcow2
+IMAGE_NAME=rhel-server-7.4.qcow2
 PASSWORD_FOR_VMS='r3dh4t1!'
 VIRT_DOMAIN='themike.systems'
 
 ### Let the user know that this will destroy his environment.
-
+mv /rhel-server-7.4.qcow2 /var/lib/libvirt/images/
 ANSWER=YES
 
 if virsh list --all | egrep -q  'comp|net|ctrl|ceph|undercloud'
@@ -232,3 +232,7 @@ virt-install --ram 4096 --vcpus 2 --os-variant rhel7 \
 #EOF
 
 #chmod 755 /root/vbmc-start.sh
+
+
+
+

@@ -23,3 +23,38 @@
         dest: /etc/systemd/system/vncserver@:3.service
         owner: oracle
         remote_src: yes
+        
+        firewall-cmd --permanent --zone=public --add-port=5903/tcp
+        firewall-cmd --reload
+        
+        systemctl daemon-reload
+        systemctl start vncserver@:3.service
+        systemctl enable vncserver@:3.service
+        
+        
+        subscription-manager attach --pool=8a85f9815dbd9297015dbdb8186b428d 
+        sudo subscription-manager repos --disable=* 
+        sudo subscription-manager repos --enable=rhel-7-server-rpms --enable=rhel-7-server-extras-rpms --enable=rhel-7-server-rh-common-rpms
+        yum update -y
+        
+        yum install \
+        libguestfs \
+        libguestfs-tools \
+        libvirt-client \
+        libvirt \
+        libvirt-python \
+        qemu-guest-agent \
+        qemu-img \
+        qemu-kvm \
+        virt-install \
+        virt-manager \      
+        virt-viewer \
+        virt-who \
+        spice-vdagent \
+        targetcli \
+        
+        cd /var/lib/libvirt/images
+        
+
+        
+        
