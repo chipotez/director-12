@@ -24,8 +24,8 @@
         owner: oracle
         remote_src: yes
         
-        firewall-cmd --permanent --zone=public --add-port=5903/tcp
-        firewall-cmd --reload
+        #firewall-cmd --permanent --zone=public --add-port=5903/tcp
+        #firewall-cmd --reload
         
         systemctl daemon-reload
         systemctl start vncserver@:3.service
