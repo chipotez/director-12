@@ -38,7 +38,7 @@ and check to make sure that only the key(s) you wanted were added.
 Last login: Sun Nov 26 14:34:42 2017
 
 sudo yum -y install libvirt libguestfs-tools
-sudo yum install -y python-tripleoclient
+sudo yum install -y python-tripleoclient openstack-utils
 cp /usr/share/instack-undercloud/undercloud.conf.sample ~/undercloud.conf
 [DEFAULT]
 undercloud_hostname = undercloud.example.com
