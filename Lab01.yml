@@ -1,5 +1,5 @@
 [Undercloud-root]
-hostname
+#hostname
 hostnamectl set-hostname undercloud.example.com
 systemctl restart network.service
 yum -y install facter
