@@ -1,0 +1,491 @@
+source ~/stackrc
+[stack@undercloud hardware-specs]$ openstack subnet list
++--------------------------------------+-----------------+--------------------------------------+---------------+
+| ID                                   | Name            | Network                              | Subnet        |
++--------------------------------------+-----------------+--------------------------------------+---------------+
+| 28b9a385-84de-4910-8f43-80e5a24fb77b | ctlplane-subnet | c21fa342-d34f-4104-998c-4ca8701a2d43 | 172.16.0.0/24 |
++--------------------------------------+-----------------+--------------------------------------+---------------+
+[stack@undercloud hardware-specs]$ subnet_id=$(openstack subnet list | awk '/172.16.0.0/ {print $2;}')
+[stack@undercloud hardware-specs]$ openstack subnet set $subnet_id --dns-nameserver 8.8.8.8
+[stack@undercloud hardware-specs]$ openstack subnet show 28b9a385-84de-4910-8f43-80e5a24fb77b
++-------------------+--------------------------------------------------------+
+| Field             | Value                                                  |
++-------------------+--------------------------------------------------------+
+| allocation_pools  | 172.16.0.20-172.16.0.120                               |
+| cidr              | 172.16.0.0/24                                          |
+| created_at        | 2017-11-26T20:37:25Z                                   |
+| description       |                                                        |
+| dns_nameservers   | 8.8.8.8                                                |
+| enable_dhcp       | True                                                   |
+| gateway_ip        | 172.16.0.1                                             |
+| host_routes       | destination='169.254.169.254/32', gateway='172.16.0.1' |
+| id                | 28b9a385-84de-4910-8f43-80e5a24fb77b                   |
+| ip_version        | 4                                                      |
+| ipv6_address_mode | None                                                   |
+| ipv6_ra_mode      | None                                                   |
+| name              | ctlplane-subnet                                        |
+| network_id        | c21fa342-d34f-4104-998c-4ca8701a2d43                   |
+| project_id        | b10bdc241d414e0391e8005cd4259980                       |
+| revision_number   | 3                                                      |
+| segment_id        | None                                                   |
+| service_types     |                                                        |
+| subnetpool_id     | None                                                   |
+| updated_at        | 2017-11-27T02:09:40Z                                   |
++-------------------+--------------------------------------------------------+
+
+
+
+
+[stack@undercloud hardware-specs]$ openstack baremetal node show overcloud-ctrl01 | grep -A 1 deploy
+| driver_info            | {u'ssh_username': u'stack', u'deploy_kernel': u'20285957-d6ab-4dfa-9b12-35ad4d658a2e', u'deploy_ramdisk': u'd37fc3eb-1a0e-4ffe-bede-3e5b39960691', u'ssh_key_contents': u'******', u'ssh_virt_type': u'virsh', u'ssh_address': u'192.168.0.1'} |
+| driver_internal_info   | {}                                                                                                                                                                                                                                             |
+[stack@undercloud hardware-specs]$ 
+[stack@undercloud hardware-specs]$ 
+[stack@undercloud hardware-specs]$ openstack baremetal node show overcloud-ctrl03 | grep -A 1 deploy
+| driver_info            | {u'ssh_username': u'stack', u'deploy_kernel': u'20285957-d6ab-4dfa-9b12-35ad4d658a2e', u'deploy_ramdisk': u'd37fc3eb-1a0e-4ffe-bede-3e5b39960691', u'ssh_key_contents': u'******', u'ssh_virt_type': u'virsh', u'ssh_address': u'192.168.0.1'} |
+| driver_internal_info   | {}                                                                                                                                                                                                                                             |
+[stack@undercloud hardware-specs]$ 
+[stack@undercloud hardware-specs]$ 
+[stack@undercloud hardware-specs]$ 
+[stack@undercloud hardware-specs]$ 
+[stack@undercloud hardware-specs]$ openstack baremetal node show overcloud-ceph02 | grep -A 1 deploy
+| driver_info            | {u'ssh_username': u'stack', u'deploy_kernel': u'20285957-d6ab-4dfa-9b12-35ad4d658a2e', u'deploy_ramdisk': u'd37fc3eb-1a0e-4ffe-bede-3e5b39960691', u'ssh_key_contents': u'******', u'ssh_virt_type': u'virsh', u'ssh_address': u'192.168.0.1'} |
+| driver_internal_info   | {}                                                                                                                                                                                                                                             |
+[stack@undercloud hardware-specs]$ 
+[stack@undercloud hardware-specs]$ 
+[stack@undercloud hardware-specs]$ 
+[stack@undercloud hardware-specs]$ openstack baremetal node show overcloud-compute02 | grep -A 1 deploy
+| driver_info            | {u'ssh_username': u'stack', u'deploy_kernel': u'20285957-d6ab-4dfa-9b12-35ad4d658a2e', u'deploy_ramdisk': u'd37fc3eb-1a0e-4ffe-bede-3e5b39960691', u'ssh_key_contents': u'******', u'ssh_virt_type': u'virsh', u'ssh_address': u'192.168.0.1'} |
+| driver_internal_info   | {}                                                                                                                                                                                                                                             |
+[stack@undercloud hardware-specs]$ 
+
+
+
+[stack@undercloud hardware-specs]$ openstack image show 20285957-d6ab-4dfa-9b12-35ad4d658a2e
++------------------+------------------------------------------------------+
+| Field            | Value                                                |
++------------------+------------------------------------------------------+
+| checksum         | c1f6428ae7d46ff0a9e84e08a3515110                     |
+| container_format | bare                                                 |
+| created_at       | 2017-11-27T01:18:54Z                                 |
+| disk_format      | aki                                                  |
+| file             | /v2/images/20285957-d6ab-4dfa-9b12-35ad4d658a2e/file |
+| id               | 20285957-d6ab-4dfa-9b12-35ad4d658a2e                 |
+| min_disk         | 0                                                    |
+| min_ram          | 0                                                    |
+| name             | bm-deploy-kernel                                     |
+| owner            | b10bdc241d414e0391e8005cd4259980                     |
+| protected        | False                                                |
+| schema           | /v2/schemas/image                                    |
+| size             | 5877552                                              |
+| status           | active                                               |
+| tags             |                                                      |
+| updated_at       | 2017-11-27T01:18:55Z                                 |
+| virtual_size     | None                                                 |
+| visibility       | public                                               |
++------------------+------------------------------------------------------+
+[stack@undercloud hardware-specs]$ openstack image show d37fc3eb-1a0e-4ffe-bede-3e5b39960691
++------------------+------------------------------------------------------+
+| Field            | Value                                                |
++------------------+------------------------------------------------------+
+| checksum         | dfbdb5dd368bb7e1853a5a5376d82c88                     |
+| container_format | bare                                                 |
+| created_at       | 2017-11-27T01:18:55Z                                 |
+| disk_format      | ari                                                  |
+| file             | /v2/images/d37fc3eb-1a0e-4ffe-bede-3e5b39960691/file |
+| id               | d37fc3eb-1a0e-4ffe-bede-3e5b39960691                 |
+| min_disk         | 0                                                    |
+| min_ram          | 0                                                    |
+| name             | bm-deploy-ramdisk                                    |
+| owner            | b10bdc241d414e0391e8005cd4259980                     |
+| protected        | False                                                |
+| schema           | /v2/schemas/image                                    |
+| size             | 379266585                                            |
+| status           | active                                               |
+| tags             |                                                      |
+| updated_at       | 2017-11-27T01:19:02Z                                 |
+| virtual_size     | None                                                 |
+| visibility       | public                                               |
++------------------+------------------------------------------------------+
+
+[stack@undercloud hardware-specs]$ openstack baremetal show overcloud-ctrl01
+This command is deprecated. Instead, use 'openstack baremetal node show'.
++------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Field                  | Value                                                                                                                                                             |
++------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| chassis_uuid           | None                                                                                                                                                              |
+| clean_step             | {}                                                                                                                                                                |
+| console_enabled        | False                                                                                                                                                             |
+| created_at             | 2017-11-27T01:30:17+00:00                                                                                                                                         |
+| driver                 | pxe_ssh                                                                                                                                                           |
+| driver_info            | {u'ssh_username': u'stack', u'deploy_kernel': u'20285957-d6ab-4dfa-9b12-35ad4d658a2e', u'deploy_ramdisk': u'd37fc3eb-1a0e-4ffe-bede-3e5b39960691',                |
+|                        | u'ssh_key_contents': u'******', u'ssh_virt_type': u'virsh', u'ssh_address': u'192.168.0.1'}                                                                       |
+| driver_internal_info   | {}                                                                                                                                                                |
+| extra                  | {u'hardware_swift_object': u'extra_hardware-27a4a783-ecdc-4e9f-b010-4a6be1df8a4f'}                                                                                |
+| inspection_finished_at | None                                                                                                                                                              |
+| inspection_started_at  | None                                                                                                                                                              |
+| instance_info          | {}                                                                                                                                                                |
+| instance_uuid          | None                                                                                                                                                              |
+| last_error             | None                                                                                                                                                              |
+| maintenance            | False                                                                                                                                                             |
+| maintenance_reason     | None                                                                                                                                                              |
+| name                   | overcloud-ctrl01                                                                                                                                                  |
+| network_interface      | flat                                                                                                                                                              |
+| power_state            | power off                                                                                                                                                         |
+| properties             | {u'memory_mb': u'8192', u'cpu_arch': u'x86_64', u'local_gb': u'59', u'cpus': u'2', u'capabilities':                                                               |
+|                        | u'profile:control,cpu_aes:true,cpu_hugepages:true,boot_option:local'}                                                                                             |
+| provision_state        | available                                                                                                                                                         |
+| provision_updated_at   | 2017-11-27T01:46:13+00:00                                                                                                                                         |
+| raid_config            | {}                                                                                                                                                                |
+| reservation            | None                                                                                                                                                              |
+| resource_class         | None                                                                                                                                                              |
+| states                 | [{u'href': u'http://172.16.0.10:13385/v1/nodes/27a4a783-ecdc-4e9f-b010-4a6be1df8a4f/states', u'rel': u'self'}, {u'href':                                          |
+|                        | u'http://172.16.0.10:13385/nodes/27a4a783-ecdc-4e9f-b010-4a6be1df8a4f/states', u'rel': u'bookmark'}]                                                              |
+| target_power_state     | None                                                                                                                                                              |
+| target_provision_state | None                                                                                                                                                              |
+| target_raid_config     | {}                                                                                                                                                                |
+| updated_at             | 2017-11-27T01:47:06+00:00                                                                                                                                         |
+| uuid                   | 27a4a783-ecdc-4e9f-b010-4a6be1df8a4f                                                                                                                              |
++------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+[stack@undercloud hardware-specs]$ 
+[stack@undercloud hardware-specs]$ 
+[stack@undercloud hardware-specs]$ 
+[stack@undercloud hardware-specs]$ 
+[stack@undercloud hardware-specs]$ openstack baremetal configure boot
+This command is deprecated. Please use "openstack overcloud node configure" to configure manageable nodes instead.
+Started Mistral Workflow tripleo.baremetal.v1.configure. Execution ID: 7d7d65dc-8656-45c2-bc41-4c59c06175a1
+Waiting for messages on queue 'ba67c414-52f6-468d-8cec-a98d3b779d29' with no timeout.
+Started Mistral Workflow tripleo.baremetal.v1.configure. Execution ID: f7f4404c-fc3e-46df-a31f-d0ce74189d5d
+Waiting for messages on queue 'ba67c414-52f6-468d-8cec-a98d3b779d29' with no timeout.
+Started Mistral Workflow tripleo.baremetal.v1.configure. Execution ID: 3563e16b-0d1e-47bd-87ee-2828dd7718f4
+Waiting for messages on queue 'ba67c414-52f6-468d-8cec-a98d3b779d29' with no timeout.
+Started Mistral Workflow tripleo.baremetal.v1.configure. Execution ID: b7f1fce3-78ca-4977-a6e5-d7c322ea3e35
+Waiting for messages on queue 'ba67c414-52f6-468d-8cec-a98d3b779d29' with no timeout.
+Started Mistral Workflow tripleo.baremetal.v1.configure. Execution ID: f995d021-9fb0-4466-8c09-2264734bfd99
+Waiting for messages on queue 'ba67c414-52f6-468d-8cec-a98d3b779d29' with no timeout.
+Started Mistral Workflow tripleo.baremetal.v1.configure. Execution ID: 5c50fc48-934c-4835-a473-66c55572376b
+Waiting for messages on queue 'ba67c414-52f6-468d-8cec-a98d3b779d29' with no timeout.
+Started Mistral Workflow tripleo.baremetal.v1.configure. Execution ID: a6e1f319-ff2f-4d18-bcd4-9ecc687b0dbb
+Waiting for messages on queue 'ba67c414-52f6-468d-8cec-a98d3b779d29' with no timeout.
+Started Mistral Workflow tripleo.baremetal.v1.configure. Execution ID: 8a3893ea-9bbf-4bc1-9a7a-5162e222c58a
+Waiting for messages on queue 'ba67c414-52f6-468d-8cec-a98d3b779d29' with no timeout.
+Started Mistral Workflow tripleo.baremetal.v1.configure. Execution ID: f7b44b6d-6cc0-467a-9edf-c002e833d873
+Waiting for messages on queue 'ba67c414-52f6-468d-8cec-a98d3b779d29' with no timeout.
+[stack@undercloud hardware-specs]$ ^C
+[stack@undercloud hardware-specs]$ 
+[stack@undercloud hardware-specs]$ 
+[stack@undercloud hardware-specs]$ openstack baremetal show overcloud-ctrl01
+This command is deprecated. Instead, use 'openstack baremetal node show'.
++------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Field                  | Value                                                                                                                                                             |
++------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| chassis_uuid           | None                                                                                                                                                              |
+| clean_step             | {}                                                                                                                                                                |
+| console_enabled        | False                                                                                                                                                             |
+| created_at             | 2017-11-27T01:30:17+00:00                                                                                                                                         |
+| driver                 | pxe_ssh                                                                                                                                                           |
+| driver_info            | {u'ssh_username': u'stack', u'deploy_kernel': u'20285957-d6ab-4dfa-9b12-35ad4d658a2e', u'deploy_ramdisk': u'd37fc3eb-1a0e-4ffe-bede-3e5b39960691',                |
+|                        | u'ssh_key_contents': u'******', u'ssh_virt_type': u'virsh', u'ssh_address': u'192.168.0.1'}                                                                       |
+| driver_internal_info   | {}                                                                                                                                                                |
+| extra                  | {u'hardware_swift_object': u'extra_hardware-27a4a783-ecdc-4e9f-b010-4a6be1df8a4f'}                                                                                |
+| inspection_finished_at | None                                                                                                                                                              |
+| inspection_started_at  | None                                                                                                                                                              |
+| instance_info          | {}                                                                                                                                                                |
+| instance_uuid          | None                                                                                                                                                              |
+| last_error             | None                                                                                                                                                              |
+| maintenance            | False                                                                                                                                                             |
+| maintenance_reason     | None                                                                                                                                                              |
+| name                   | overcloud-ctrl01                                                                                                                                                  |
+| network_interface      | flat                                                                                                                                                              |
+| power_state            | power off                                                                                                                                                         |
+| properties             | {u'memory_mb': u'8192', u'cpu_arch': u'x86_64', u'local_gb': u'59', u'cpus': u'2', u'capabilities':                                                               |
+|                        | u'profile:control,cpu_aes:true,cpu_hugepages:true,boot_option:local'}                                                                                             |
+| provision_state        | available                                                                                                                                                         |
+| provision_updated_at   | 2017-11-27T01:46:13+00:00                                                                                                                                         |
+| raid_config            | {}                                                                                                                                                                |
+| reservation            | None                                                                                                                                                              |
+| resource_class         | None                                                                                                                                                              |
+| states                 | [{u'href': u'http://172.16.0.10:13385/v1/nodes/27a4a783-ecdc-4e9f-b010-4a6be1df8a4f/states', u'rel': u'self'}, {u'href':                                          |
+|                        | u'http://172.16.0.10:13385/nodes/27a4a783-ecdc-4e9f-b010-4a6be1df8a4f/states', u'rel': u'bookmark'}]                                                              |
+| target_power_state     | None                                                                                                                                                              |
+| target_provision_state | None                                                                                                                                                              |
+| target_raid_config     | {}                                                                                                                                                                |
+| updated_at             | 2017-11-27T02:23:15+00:00                                                                                                                                         |
+| uuid                   | 27a4a783-ecdc-4e9f-b010-4a6be1df8a4f                                                                                                                              |
++------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+
+[stack@undercloud hardware-specs]$ openstack overcloud profiles list
++--------------------------------------+---------------------+-----------------+-----------------+-------------------+
+| Node UUID                            | Node Name           | Provision State | Current Profile | Possible Profiles |
++--------------------------------------+---------------------+-----------------+-----------------+-------------------+
+| 27a4a783-ecdc-4e9f-b010-4a6be1df8a4f | overcloud-ctrl01    | available       | control         |                   |
+| c135c779-7f67-4f7d-a071-5f77c7d757e9 | overcloud-ctrl02    | available       | control         |                   |
+| 10c459d0-c974-4d5f-80b6-1213b68633a6 | overcloud-ctrl03    | available       | control         |                   |
+| 24faed30-1cfc-462a-b8dc-3b13d3c93994 | overcloud-compute01 | available       | compute         |                   |
+| 86400344-72f5-495f-9d6c-7f491431ba23 | overcloud-compute02 | available       | compute         |                   |
+| ca05263e-efb9-4dda-87b5-87db7935d928 | overcloud-ceph01    | available       | ceph-storage    |                   |
+| 19d52e39-22fd-4989-900a-68dd285acbf6 | overcloud-ceph02    | available       | ceph-storage    |                   |
+| aa936fd0-44b4-43e2-a8af-6498c4693945 | overcloud-ceph03    | available       | ceph-storage    |                   |
+| a39ec4af-7326-407f-b0ba-c1e7ec10d921 | overcloud-networker | available       | networker       |                   |
++--------------------------------------+---------------------+-----------------+-----------------+-------------------+
+
+
+
+
+
+
+
+[stack@undercloud hardware-specs]$ time openstack overcloud deploy     --templates /usr/share/openstack-tripleo-heat-templates/ --ntp-server 10.0.77.54 --control-scale 3 --compute-scale 2 --control-flavor control  --compute-flavor compute 
+Removing the current plan files
+Uploading new plan files
+Started Mistral Workflow tripleo.plan_management.v1.update_deployment_plan. Execution ID: efc5a32a-5cf3-4faf-82e6-2dfc96c37d2e
+Plan updated
+Deploying templates in the directory /tmp/tripleoclient-UveeTJ/tripleo-heat-templates
+Started Mistral Workflow tripleo.deployment.v1.deploy_plan. Execution ID: 632a02e7-6016-46b4-bbbe-19c47014408f
+2017-11-27 02:46:01Z [overcloud]: CREATE_IN_PROGRESS  Stack CREATE started
+
+2017-11-27 03:23:18Z [overcloud.AllNodesDeploySteps.ControllerPostConfig]: CREATE_COMPLETE  Stack CREATE completed successfully
+2017-11-27 03:23:19Z [overcloud.AllNodesDeploySteps.ControllerPostConfig]: CREATE_COMPLETE  state changed
+2017-11-27 03:23:19Z [overcloud.AllNodesDeploySteps]: CREATE_COMPLETE  Stack CREATE completed successfully
+2017-11-27 03:23:19Z [overcloud.AllNodesDeploySteps]: CREATE_COMPLETE  state changed
+2017-11-27 03:23:19Z [overcloud]: CREATE_COMPLETE  Stack CREATE completed successfully
+
+ Stack overcloud CREATE_COMPLETE 
+
+Host 172.16.0.30 not found in /home/stack/.ssh/known_hosts
+Overcloud Endpoint: http://172.16.0.30:5000/v2.0
+Overcloud Deployed
+
+real  39m20.642s
+user  0m4.150s
+sys 0m0.558s
+
+
+
+
+
+[stack@undercloud hardware-specs]$ ls
+overcloud-ctrl01  overcloud-ctrl02  overcloud-ctrl03  overcloudrc  overcloudrc.v3  tempest-deployer-input.conf
+[stack@undercloud hardware-specs]$ source overcloudrc
+[stack@undercloud hardware-specs]$ source ~/stackrc
+[stack@undercloud hardware-specs]$ openstack network list
++--------------------------------------+----------+--------------------------------------+
+| ID                                   | Name     | Subnets                              |
++--------------------------------------+----------+--------------------------------------+
+| c21fa342-d34f-4104-998c-4ca8701a2d43 | ctlplane | 28b9a385-84de-4910-8f43-80e5a24fb77b |
++--------------------------------------+----------+--------------------------------------+
+[stack@undercloud hardware-specs]$ net_id=$(openstack network show ctlplane -c id -f value)
+[stack@undercloud hardware-specs]$ cat /var/lib/neutron/dhcp/$net_id/opts ; echo
+tag:tag0,option:dns-server,8.8.8.8
+tag:tag0,option:classless-static-route,169.254.169.254/32,172.16.0.1,0.0.0.0/0,172.16.0.1
+tag:tag0,249,169.254.169.254/32,172.16.0.1,0.0.0.0/0,172.16.0.1
+tag:tag0,option:router,172.16.0.1
+tag:36e6825b-a7da-4dd9-a0fa-f3e1ddfd1c4e,option:server-ip-address,172.16.0.1
+tag:36e6825b-a7da-4dd9-a0fa-f3e1ddfd1c4e,tag:!ipxe,option:bootfile-name,undionly.kpxe
+tag:36e6825b-a7da-4dd9-a0fa-f3e1ddfd1c4e,tag:ipxe,option:bootfile-name,http://172.16.0.1:8088/boot.ipxe
+tag:36e6825b-a7da-4dd9-a0fa-f3e1ddfd1c4e,option:tftp-server,172.16.0.1
+tag:d6815f15-f8d0-4f30-9c2d-1a1dc15fd123,option:server-ip-address,172.16.0.1
+tag:d6815f15-f8d0-4f30-9c2d-1a1dc15fd123,tag:ipxe,option:bootfile-name,http://172.16.0.1:8088/boot.ipxe
+tag:d6815f15-f8d0-4f30-9c2d-1a1dc15fd123,option:tftp-server,172.16.0.1
+tag:d6815f15-f8d0-4f30-9c2d-1a1dc15fd123,tag:!ipxe,option:bootfile-name,undionly.kpxe
+tag:b8aea7f8-6859-4823-b5fb-44874c862b8d,option:server-ip-address,172.16.0.1
+tag:b8aea7f8-6859-4823-b5fb-44874c862b8d,tag:ipxe,option:bootfile-name,http://172.16.0.1:8088/boot.ipxe
+tag:b8aea7f8-6859-4823-b5fb-44874c862b8d,option:tftp-server,172.16.0.1
+tag:b8aea7f8-6859-4823-b5fb-44874c862b8d,tag:!ipxe,option:bootfile-name,undionly.kpxe
+tag:34488374-5e35-426d-8e5a-1593029ab227,option:server-ip-address,172.16.0.1
+tag:34488374-5e35-426d-8e5a-1593029ab227,tag:!ipxe,option:bootfile-name,undionly.kpxe
+tag:34488374-5e35-426d-8e5a-1593029ab227,tag:ipxe,option:bootfile-name,http://172.16.0.1:8088/boot.ipxe
+tag:34488374-5e35-426d-8e5a-1593029ab227,option:tftp-server,172.16.0.1
+tag:0aeb1d00-835d-4a35-addb-915e119f284a,option:server-ip-address,172.16.0.1
+tag:0aeb1d00-835d-4a35-addb-915e119f284a,tag:!ipxe,option:bootfile-name,undionly.kpxe
+tag:0aeb1d00-835d-4a35-addb-915e119f284a,tag:ipxe,option:bootfile-name,http://172.16.0.1:8088/boot.ipxe
+tag:0aeb1d00-835d-4a35-addb-915e119f284a,option:tftp-server,172.16.0.1
+[stack@undercloud hardware-specs]$ openstack port show 36e6825b-a7da-4dd9-a0fa-f3e1ddfd1c4e
++-----------------------+-------------------------------------------------------------------------------------------------+
+| Field                 | Value                                                                                           |
++-----------------------+-------------------------------------------------------------------------------------------------+
+| admin_state_up        | UP                                                                                              |
+| allowed_address_pairs |                                                                                                 |
+| binding_host_id       | undercloud.example.com                                                                          |
+| binding_profile       |                                                                                                 |
+| binding_vif_details   | ovs_hybrid_plug='True', port_filter='True'                                                      |
+| binding_vif_type      | ovs                                                                                             |
+| binding_vnic_type     | normal                                                                                          |
+| created_at            | 2017-11-27T02:47:10Z                                                                            |
+| description           |                                                                                                 |
+| device_id             | 5d745367-62a1-4377-910f-e81bcf1b95d7                                                            |
+| device_owner          | compute:None                                                                                    |
+| dns_assignment        | None                                                                                            |
+| dns_name              | None                                                                                            |
+| extra_dhcp_opts       | ip_version='4', opt_name='server-ip-address', opt_value='172.16.0.1'                            |
+|                       | ip_version='4', opt_name='tag:!ipxe,bootfile-name', opt_value='undionly.kpxe'                   |
+|                       | ip_version='4', opt_name='tag:ipxe,bootfile-name', opt_value='http://172.16.0.1:8088/boot.ipxe' |
+|                       | ip_version='4', opt_name='tftp-server', opt_value='172.16.0.1'                                  |
+| fixed_ips             | ip_address='172.16.0.25', subnet_id='28b9a385-84de-4910-8f43-80e5a24fb77b'                      |
+| id                    | 36e6825b-a7da-4dd9-a0fa-f3e1ddfd1c4e                                                            |
+| ip_address            | None                                                                                            |
+| mac_address           | 52:54:00:90:96:f3                                                                               |
+| name                  |                                                                                                 |
+| network_id            | c21fa342-d34f-4104-998c-4ca8701a2d43                                                            |
+| option_name           | None                                                                                            |
+| option_value          | None                                                                                            |
+| port_security_enabled | False                                                                                           |
+| project_id            | b10bdc241d414e0391e8005cd4259980                                                                |
+| qos_policy_id         | None                                                                                            |
+| revision_number       | 11                                                                                              |
+| security_groups       | 32e08b2d-b1ea-4647-9fd1-423797eda8e9                                                            |
+| status                | DOWN                                                                                            |
+| subnet_id             | None                                                                                            |
+| updated_at            | 2017-11-27T02:47:33Z                                                                            |
++-----------------------+-------------------------------------------------------------------------------------------------+
+[stack@undercloud hardware-specs]$ openstack port show 0aeb1d00-835d-4a35-addb-915e119f284a
++-----------------------+-------------------------------------------------------------------------------------------------+
+| Field                 | Value                                                                                           |
++-----------------------+-------------------------------------------------------------------------------------------------+
+| admin_state_up        | UP                                                                                              |
+| allowed_address_pairs |                                                                                                 |
+| binding_host_id       | undercloud.example.com                                                                          |
+| binding_profile       |                                                                                                 |
+| binding_vif_details   | ovs_hybrid_plug='True', port_filter='True'                                                      |
+| binding_vif_type      | ovs                                                                                             |
+| binding_vnic_type     | normal                                                                                          |
+| created_at            | 2017-11-27T02:47:19Z                                                                            |
+| description           |                                                                                                 |
+| device_id             | 35e785dd-a44f-4358-bea7-e3746796c9c6                                                            |
+| device_owner          | compute:None                                                                                    |
+| dns_assignment        | None                                                                                            |
+| dns_name              | None                                                                                            |
+| extra_dhcp_opts       | ip_version='4', opt_name='server-ip-address', opt_value='172.16.0.1'                            |
+|                       | ip_version='4', opt_name='tag:!ipxe,bootfile-name', opt_value='undionly.kpxe'                   |
+|                       | ip_version='4', opt_name='tag:ipxe,bootfile-name', opt_value='http://172.16.0.1:8088/boot.ipxe' |
+|                       | ip_version='4', opt_name='tftp-server', opt_value='172.16.0.1'                                  |
+| fixed_ips             | ip_address='172.16.0.33', subnet_id='28b9a385-84de-4910-8f43-80e5a24fb77b'                      |
+| id                    | 0aeb1d00-835d-4a35-addb-915e119f284a                                                            |
+| ip_address            | None                                                                                            |
+| mac_address           | 52:54:00:20:44:ad                                                                               |
+| name                  |                                                                                                 |
+| network_id            | c21fa342-d34f-4104-998c-4ca8701a2d43                                                            |
+| option_name           | None                                                                                            |
+| option_value          | None                                                                                            |
+| port_security_enabled | False                                                                                           |
+| project_id            | b10bdc241d414e0391e8005cd4259980                                                                |
+| qos_policy_id         | None                                                                                            |
+| revision_number       | 11                                                                                              |
+| security_groups       | 32e08b2d-b1ea-4647-9fd1-423797eda8e9                                                            |
+| status                | DOWN                                                                                            |
+| subnet_id             | None                                                                                            |
+| updated_at            | 2017-11-27T02:47:34Z                                                                            |
++-----------------------+-------------------------------------------------------------------------------------------------+
+[stack@undercloud hardware-specs]$ 
+[stack@undercloud hardware-specs]$ 
+[stack@undercloud hardware-specs]$ cat /httpboot/boot.ipxe
+#!ipxe
+
+# NOTE(lucasagomes): Loop over all network devices and boot from
+# the first one capable of booting. For more information see:
+# https://bugs.launchpad.net/ironic/+bug/1504482
+set netid:int32 -1
+:loop
+inc netid || chain pxelinux.cfg/${mac:hexhyp} || goto old_rom
+isset ${net${netid}/mac} || goto loop_done
+echo Attempting to boot from MAC ${net${netid}/mac:hexhyp}
+chain pxelinux.cfg/${net${netid}/mac:hexhyp} || goto loop
+
+:loop_done
+echo PXE boot failed! No configuration found for any of the present NICs.
+echo Press any key to reboot...
+prompt --timeout 180
+reboot
+
+:old_rom
+echo PXE boot failed! No configuration found for NIC ${mac:hexhyp}.
+echo Please update your iPXE ROM and retry.
+echo Press any key to reboot...
+prompt --timeout 180
+reboot[stack@undercloud hardware-specs]$ cd /httpboot/pxelinux.cfg/
+[stack@undercloud pxelinux.cfg]$ ls
+[stack@undercloud pxelinux.cfg]$ sudo grep -m 1 "Still waiting for ironic node" /var/log/nova/nova-compute.log
+2017-11-26 21:47:24.093 2908 DEBUG nova.virt.ironic.driver [-] [instance: 1a4031ef-57a2-44fe-9180-08cf877de6d1] Still waiting for ironic node 24faed30-1cfc-462a-b8dc-3b13d3c93994 to become ACTIVE: power_state="power off", target_power_state=None, provision_state="deploying", target_provision_state="active" _log_ironic_polling /usr/lib/python2.7/site-packages/nova/virt/ironic/driver.py:122
+[stack@undercloud pxelinux.cfg]$ openstack server list
++--------------------------------------+------------------------+--------+----------------------+----------------+
+| ID                                   | Name                   | Status | Networks             | Image Name     |
++--------------------------------------+------------------------+--------+----------------------+----------------+
+| 35e785dd-a44f-4358-bea7-e3746796c9c6 | overcloud-controller-2 | ACTIVE | ctlplane=172.16.0.33 | overcloud-full |
+| 2db6280f-579f-46ce-b707-b351f7bbcef8 | overcloud-controller-0 | ACTIVE | ctlplane=172.16.0.29 | overcloud-full |
+| 1a4031ef-57a2-44fe-9180-08cf877de6d1 | overcloud-compute-0    | ACTIVE | ctlplane=172.16.0.24 | overcloud-full |
+| 727eee4e-fe8f-489f-9ae7-2eafc5cf97d5 | overcloud-controller-1 | ACTIVE | ctlplane=172.16.0.32 | overcloud-full |
+| 5d745367-62a1-4377-910f-e81bcf1b95d7 | overcloud-compute-1    | ACTIVE | ctlplane=172.16.0.25 | overcloud-full |
++--------------------------------------+------------------------+--------+----------------------+----------------+
+[stack@undercloud pxelinux.cfg]$ ssh heat-admin@172.16.0.33
+The authenticity of host '172.16.0.33 (172.16.0.33)' can't be established.
+ECDSA key fingerprint is SHA256:w9AgAF5qDIo6rEvl89hXA9fhFMwSZ1ocnm5QWf9YYso.
+ECDSA key fingerprint is MD5:b5:31:bd:81:80:30:75:f4:c7:fb:9a:8a:43:6d:99:ce.
+Are you sure you want to continue connecting (yes/no)? yes
+Warning: Permanently added '172.16.0.33' (ECDSA) to the list of known hosts.
+[heat-admin@overcloud-controller-2 ~]$ sudo cat /etc/os-collect-config.conf
+[DEFAULT]
+command = os-refresh-config --timeout 14400
+collectors = ec2
+collectors = request
+collectors = local
+
+
+
+
+[request]
+metadata_url = http://172.16.0.11:8080/v1/AUTH_b10bdc241d414e0391e8005cd4259980/ov-5kqkxitiraz-2-htscsetvlgla-Controller-lt7qe54qesoo/e04f10fb-59fc-4ec1-b34b-379d393a5cbf?temp_url_sig=731745b5abaed3e999460ebdf652e6d2aebcee14&temp_url_expires=2147483586
+
+[heat-admin@overcloud-controller-2 ~]$ ls -1 /usr/libexec/os-refresh-config/configure.d/
+20-os-apply-config
+20-os-net-config
+50-heat-config-docker-cmd
+55-heat-config
+[heat-admin@overcloud-controller-2 ~]$ sudo sh /usr/libexec/os-refresh-config/configure.d/20-os-apply-config
+[2017/11/27 03:41:10 AM] [INFO] writing /etc/os-net-config/config.json
+[2017/11/27 03:41:10 AM] [INFO] writing /var/run/heat-config/heat-config
+[2017/11/27 03:41:10 AM] [INFO] writing /etc/os-collect-config.conf
+[2017/11/27 03:41:10 AM] [INFO] success
+[heat-admin@overcloud-controller-2 ~]$ sudo grep -v '^#' /var/lib/heat-config/heat-config-puppet/cd ^C
+[heat-admin@overcloud-controller-2 ~]$ cd /var/lib/heat-config/heat-config-puppet/
+-bash: cd: /var/lib/heat-config/heat-config-puppet/: Permiso denegado
+[heat-admin@overcloud-controller-2 ~]$ sudo cd /var/lib/heat-config/heat-config-puppet/
+[heat-admin@overcloud-controller-2 ~]$ ls
+[heat-admin@overcloud-controller-2 ~]$ cat ~/overcloudrc
+cat: /home/heat-admin/overcloudrc: No existe el fichero o el directorio
+[heat-admin@overcloud-controller-2 ~]$ cd -
+-bash: cd: OLDPWD no está definido
+[heat-admin@overcloud-controller-2 ~]$ exit
+logout
+Connection to 172.16.0.33 closed.
+[stack@undercloud pxelinux.cfg]$ cd -
+/home/stack/hardware-specs
+[stack@undercloud hardware-specs]$ cat ~/overcloudrc
+cat: /home/stack/overcloudrc: No existe el fichero o el directorio
+[stack@undercloud hardware-specs]$ cat overcloudrc
+# Clear any old environment that may conflict.
+for key in $( set | awk '{FS="="}  /^OS_/ {print $1}' ); do unset $key ; done
+export OS_USERNAME=admin
+export OS_BAREMETAL_API_VERSION=1.29
+export NOVA_VERSION=1.1
+export OS_PROJECT_NAME=admin
+export OS_PASSWORD=F6jkkABf9kv8yRynXUGzMZd6X
+export OS_NO_CACHE=True
+export COMPUTE_API_VERSION=1.1
+export no_proxy=,172.16.0.30,172.16.0.30
+export OS_CLOUDNAME=overcloud
+export OS_AUTH_URL=http://172.16.0.30:5000/v2.0
+export IRONIC_API_VERSION=1.29
+export OS_AUTH_TYPE=password
+export PYTHONWARNINGS="ignore:Certificate has no, ignore:A true SSLContext object is not available"
+[stack@undercloud hardware-specs]$ 
+
+
+
+
+
+
+
+
+
+
