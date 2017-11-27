@@ -1,0 +1,512 @@
+[stack@undercloud ~]$ source ~/stackrc
+[stack@undercloud images]$ sudo yum install rhosp-director-images rhosp-director-images-ipa
+[stack@undercloud images]$ sudo yum install libguestfs-tools-c
+cd ~/images
+for i in /usr/share/rhosp-director-images/overcloud-full-latest-11.0.tar /usr/share/rhosp-director-images/ironic-python-agent-latest-11.0.tar; do tar -xvf $i; done
+virt-customize -a overcloud-full.qcow2     --root-password password:r3dh4t1!
+[stack@undercloud images]$ source ~/stackrc
+[stack@undercloud images]$ openstack image list
+
+[stack@undercloud images]$ openstack overcloud image upload
+Image "overcloud-full-vmlinuz" was uploaded.
++--------------------------------------+------------------------+-------------+---------+--------+
+|                  ID                  |          Name          | Disk Format |   Size  | Status |
++--------------------------------------+------------------------+-------------+---------+--------+
+| 953f1afb-2b0a-4ce2-b3cd-da3887406241 | overcloud-full-vmlinuz |     aki     | 5877552 | active |
++--------------------------------------+------------------------+-------------+---------+--------+
+Image "overcloud-full-initrd" was uploaded.
++--------------------------------------+-----------------------+-------------+----------+--------+
+|                  ID                  |          Name         | Disk Format |   Size   | Status |
++--------------------------------------+-----------------------+-------------+----------+--------+
+| 18b70498-45ac-4b0d-851f-d9230f7ec07c | overcloud-full-initrd |     ari     | 58486380 | active |
++--------------------------------------+-----------------------+-------------+----------+--------+
+Image "overcloud-full" was uploaded.
++--------------------------------------+----------------+-------------+------------+--------+
+|                  ID                  |      Name      | Disk Format |    Size    | Status |
++--------------------------------------+----------------+-------------+------------+--------+
+| f50ccbcc-4719-4f51-8344-2e818f7beb58 | overcloud-full |    qcow2    | 1367932928 | active |
++--------------------------------------+----------------+-------------+------------+--------+
+Image "bm-deploy-kernel" was uploaded.
++--------------------------------------+------------------+-------------+---------+--------+
+|                  ID                  |       Name       | Disk Format |   Size  | Status |
++--------------------------------------+------------------+-------------+---------+--------+
+| 20285957-d6ab-4dfa-9b12-35ad4d658a2e | bm-deploy-kernel |     aki     | 5877552 | active |
++--------------------------------------+------------------+-------------+---------+--------+
+Image "bm-deploy-ramdisk" was uploaded.
++--------------------------------------+-------------------+-------------+-----------+--------+
+|                  ID                  |        Name       | Disk Format |    Size   | Status |
++--------------------------------------+-------------------+-------------+-----------+--------+
+| d37fc3eb-1a0e-4ffe-bede-3e5b39960691 | bm-deploy-ramdisk |     ari     | 379266585 | active |
++--------------------------------------+-------------------+-------------+-----------+--------+
+
+
+
+
+[stack@undercloud images]$ openstack image list
++--------------------------------------+------------------------+--------+
+| ID                                   | Name                   | Status |
++--------------------------------------+------------------------+--------+
+| 20285957-d6ab-4dfa-9b12-35ad4d658a2e | bm-deploy-kernel       | active |
+| d37fc3eb-1a0e-4ffe-bede-3e5b39960691 | bm-deploy-ramdisk      | active |
+| f50ccbcc-4719-4f51-8344-2e818f7beb58 | overcloud-full         | active |
+| 18b70498-45ac-4b0d-851f-d9230f7ec07c | overcloud-full-initrd  | active |
+| 953f1afb-2b0a-4ce2-b3cd-da3887406241 | overcloud-full-vmlinuz | active |
++--------------------------------------+------------------------+--------+
+[stack@undercloud images]$ 
+[stack@undercloud images]$ 
+[stack@undercloud images]$ 
+[stack@undercloud images]$ tree /httpboot/
+/httpboot/
+├── agent.kernel
+├── agent.ramdisk
+└── inspector.ipxe
+
+0 directories, 3 files
+[stack@undercloud images]$ 
+[stack@undercloud images]$ 
+[stack@undercloud images]$ exit
+logout
+Connection to undercloud closed.
+
+
+[KVM - Host]
+[root@kvm ~]# for i in ctrl01 ctrl02 ctrl03 compute01 compute02 \
+>   ceph01 ceph02 ceph03 networker; \
+>   do virsh domiflist overcloud-$i | awk '$3 == "provisioning" {print $5};'; \
+>   done > /tmp/nodes.txt
+[root@kvm ~]# scp /tmp/nodes.txt stack@undercloud:.
+nodes.txt                                                                                                                                                   100%  162   198.9KB/s   00:00    
+
+[Undercloud]
+cat ~/nodes.txt
+52:54:00:d5:b2:b7
+52:54:00:38:9c:d8
+52:54:00:20:44:ad
+52:54:00:55:7b:6e
+52:54:00:90:96:f3
+52:54:00:38:e7:3f
+52:54:00:40:83:7f
+52:54:00:37:c9:01
+52:54:00:01:65:d6
+
+
+
+[stack@undercloud ~]$ jq . << EOF > ~/instackenv.json
+> {
+>   "nodes": [
+>     {
+>       "name": "overcloud-ctrl01",
+>       "capabilities": "profile:control",
+>       "pm_addr": "192.168.0.1",
+>       "pm_password": "$(cat ~/.ssh/id_rsa)",
+>       "pm_type": "pxe_ssh",
+>       "mac": [
+>         "$(sed -n 1p nodes.txt)"
+>       ],
+>       "pm_user": "stack"
+>     },
+>     {
+>       "name": "overcloud-ctrl02",
+>       "capabilities": "profile:control",
+>       "pm_addr": "192.168.0.1",
+>       "pm_password": "$(cat ~/.ssh/id_rsa)",
+>       "pm_type": "pxe_ssh",
+>       "mac": [
+>         "$(sed -n 2p nodes.txt)"
+>       ],
+>       "pm_user": "stack"
+>     },
+>     {
+>       "name": "overcloud-ctrl03",
+>       "capabilities": "profile:control",
+>       "pm_addr": "192.168.0.1",
+>       "pm_password": "$(cat ~/.ssh/id_rsa)",
+>       "pm_type": "pxe_ssh",
+>       "mac": [
+>         "$(sed -n 3p nodes.txt)"
+>       ],
+>       "pm_user": "stack"
+>     },
+>     {
+>       "name": "overcloud-compute01",
+>       "capabilities": "profile:compute",
+>       "pm_addr": "192.168.0.1",
+>       "pm_password": "$(cat ~/.ssh/id_rsa)",
+>       "pm_type": "pxe_ssh",
+>       "mac": [
+>         "$(sed -n 4p nodes.txt)"
+>       ],
+>       "pm_user": "stack"
+>     },
+>     {
+>       "name": "overcloud-compute02",
+>       "capabilities": "profile:compute",
+>       "pm_addr": "192.168.0.1",
+>       "pm_password": "$(cat ~/.ssh/id_rsa)",
+>       "pm_type": "pxe_ssh",
+>       "mac": [
+>         "$(sed -n 5p nodes.txt)"
+>       ],
+>       "pm_user": "stack"
+>     },
+>     {
+>       "name": "overcloud-ceph01",
+>       "capabilities": "profile:ceph-storage",
+>       "pm_addr": "192.168.0.1",
+>       "pm_password": "$(cat ~/.ssh/id_rsa)",
+>       "pm_type": "pxe_ssh",
+>       "mac": [
+>         "$(sed -n 6p nodes.txt)"
+>       ],
+>       "pm_user": "stack"
+>     },
+>     {
+>       "name": "overcloud-ceph02",
+>       "capabilities": "profile:ceph-storage",
+>       "pm_addr": "192.168.0.1",
+>       "pm_password": "$(cat ~/.ssh/id_rsa)",
+>       "pm_type": "pxe_ssh",
+>       "mac": [
+>         "$(sed -n 7p nodes.txt)"
+>       ],
+>       "pm_user": "stack"
+>     },
+>     {
+>       "name": "overcloud-ceph03",
+>       "capabilities": "profile:ceph-storage",
+>       "pm_addr": "192.168.0.1",
+>       "pm_password": "$(cat ~/.ssh/id_rsa)",
+>       "pm_type": "pxe_ssh",
+>       "mac": [
+>         "$(sed -n 8p nodes.txt)"
+>       ],
+>       "pm_user": "stack"
+>     },
+>     {
+>       "name": "overcloud-networker",
+>       "capabilities": "profile:networker",
+>       "pm_addr": "192.168.0.1",
+>       "pm_password": "$(cat ~/.ssh/id_rsa)",
+>       "pm_type": "pxe_ssh",
+>       "mac": [
+>         "$(sed -n 9p nodes.txt)"
+>       ],
+>       "pm_user": "stack"
+>     }
+>   ]
+> }
+> EOF
+
+
+[stack@undercloud ~]$ cat instackenv.json 
+{
+  "nodes": [
+    {
+      "pm_user": "stack",
+      "mac": [
+        "52:54:00:d5:b2:b7"
+      ],
+      "pm_type": "pxe_ssh",
+      "pm_password": "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEAtjU5k30uCq8a74vG1ywsAp9/mVrZyA+x3xMIdflB00JegQPb\nQ3JMhQoOeumB43ZJ9MfCh/ztGkZ8dZnSo4Da8oQPau4GasydZ86mE57Am5MJRPEz\nsmgGJzTLw6vXYsP8NJSNkjB4lRncvznt774QB72a2utRLHAD+dddGlbMiA5JQngg\nV9+7Kpm4PUFDcVtZAx1qKxLyGX64GvDYinfeWoZljPpzXo/j2HhPDZZ/Y9/7kAod\nF3Ynlvc+nWssnIYUF4KeAUOiwdPd8yHxavU6MHUTE1fRHcxjxwldU4k9xscIhuFV\n3UwQofh1OA3abOnxb2QwPNkx0hnyHxYU8Sz1bQIDAQABAoIBAFW1e7vxKnNEIzuD\nWKlm0dz6Ah+1KLR/DYCNh3FXKquhkKrHkaCMZ4o9TMpshPjmb6uBO/ST+URe27TG\nAtt+hX+Gt2npRYN/dJucDWs1RgzogXe4rkTBwgM3RpJohwyifESPjHiz7ETWwYwC\nR/Z6RTge7HUGNEze9D/WGqmFIvjsVDUPiadA0TlzGIF8/oKxjFpEbUmbicb8XB38\n6fs1TYFdQ5ykM3/ce7uSVvsaxXD0STOVnvwAOFRoh0D0jDcbMWuxb52W/X7Zbhaz\n/5U4uX6SCtQL6F8QALpauT/ElZekv+olfR1uKJx45XwYLBYNr8MJJppFIJ9fEgSw\nTdUS2tECgYEA3L+0grdlVsIjsnOh9CQrhuK8Rd61m2f6ejMLmT9IxXpRMt6a7YJ6\naf9uyRWwcNykHdjqd1vqPangj+ViOMzI2e7bZkiaDj+F5qDkruUeMWjMhWG2yFs0\naCVNdKYBzeqZbwjszcDWmFind7KFcYYsZg0nhcZIv4hCEBHX9ZG0+7MCgYEA003z\nsNYJL6yvZ5KA6qhupCgDRocVqZS7uI4aQtjKxvmP7//r3JZtzVqQhwTwLuqrfTBo\nNEjbO28w06S0X5GhDh92Mh2m/y9wK95lVVAxU9rtiFyjbB6RNWAzym4aebC2H5At\n7594k0UE13r9TB4IADvMP1g04Km1dYkFgCePOl8CgYBzw/FlT8pMWlmgHzYCs+lD\nvqpftfDlg/z+ksB1aJPARGpK1CTJg9Cwv+0YdVBnj75djMFBQSmxluIWdIQzJ2n5\nqGLU3CQ2bqfJD/19nthbrwr6tAjIP9RW/aEGGHz/wRUf/r05FfU0ReHlSvDiXSvx\nhNqCND84eruyc7kepoAUMwKBgB2kr+08+ajwhuL20JMa8fqhimQYi1dxACzR8qky\nFLB5TlITCxm1GM5YSDJI5REP5uL3KYc8OVVLMgRe9Nb7bSa4DzLUqhreotPkrT6c\ns27aJbydkmeWmjRsvJdHfvtXaRVgerFFI/s1EYrRPDuzctfli6/PRgvGgyhsApOJ\n+TPtAoGBAIxqTh86sgkTMWiuRsZ/RrtfUFgtyrLZ6jMzvZsGGOn4EOVAKp3ytpmn\n7HaeZ+O3G4DrtkKXCrruk6IbEEXgmqv4l+2IBU/i7FVV3R9UDlWDbTkozHiu3eMU\nV+ty6N5CvYiC69fNPxeMYpfTYW6GEJ0az5nZ6vci0FBdlEJZxUHe\n-----END RSA PRIVATE KEY-----",
+      "pm_addr": "192.168.0.1",
+      "capabilities": "profile:control",
+      "name": "overcloud-ctrl01"
+    },
+    {
+      "pm_user": "stack",
+      "mac": [
+        "52:54:00:38:9c:d8"
+      ],
+      "pm_type": "pxe_ssh",
+      "pm_password": "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEAtjU5k30uCq8a74vG1ywsAp9/mVrZyA+x3xMIdflB00JegQPb\nQ3JMhQoOeumB43ZJ9MfCh/ztGkZ8dZnSo4Da8oQPau4GasydZ86mE57Am5MJRPEz\nsmgGJzTLw6vXYsP8NJSNkjB4lRncvznt774QB72a2utRLHAD+dddGlbMiA5JQngg\nV9+7Kpm4PUFDcVtZAx1qKxLyGX64GvDYinfeWoZljPpzXo/j2HhPDZZ/Y9/7kAod\nF3Ynlvc+nWssnIYUF4KeAUOiwdPd8yHxavU6MHUTE1fRHcxjxwldU4k9xscIhuFV\n3UwQofh1OA3abOnxb2QwPNkx0hnyHxYU8Sz1bQIDAQABAoIBAFW1e7vxKnNEIzuD\nWKlm0dz6Ah+1KLR/DYCNh3FXKquhkKrHkaCMZ4o9TMpshPjmb6uBO/ST+URe27TG\nAtt+hX+Gt2npRYN/dJucDWs1RgzogXe4rkTBwgM3RpJohwyifESPjHiz7ETWwYwC\nR/Z6RTge7HUGNEze9D/WGqmFIvjsVDUPiadA0TlzGIF8/oKxjFpEbUmbicb8XB38\n6fs1TYFdQ5ykM3/ce7uSVvsaxXD0STOVnvwAOFRoh0D0jDcbMWuxb52W/X7Zbhaz\n/5U4uX6SCtQL6F8QALpauT/ElZekv+olfR1uKJx45XwYLBYNr8MJJppFIJ9fEgSw\nTdUS2tECgYEA3L+0grdlVsIjsnOh9CQrhuK8Rd61m2f6ejMLmT9IxXpRMt6a7YJ6\naf9uyRWwcNykHdjqd1vqPangj+ViOMzI2e7bZkiaDj+F5qDkruUeMWjMhWG2yFs0\naCVNdKYBzeqZbwjszcDWmFind7KFcYYsZg0nhcZIv4hCEBHX9ZG0+7MCgYEA003z\nsNYJL6yvZ5KA6qhupCgDRocVqZS7uI4aQtjKxvmP7//r3JZtzVqQhwTwLuqrfTBo\nNEjbO28w06S0X5GhDh92Mh2m/y9wK95lVVAxU9rtiFyjbB6RNWAzym4aebC2H5At\n7594k0UE13r9TB4IADvMP1g04Km1dYkFgCePOl8CgYBzw/FlT8pMWlmgHzYCs+lD\nvqpftfDlg/z+ksB1aJPARGpK1CTJg9Cwv+0YdVBnj75djMFBQSmxluIWdIQzJ2n5\nqGLU3CQ2bqfJD/19nthbrwr6tAjIP9RW/aEGGHz/wRUf/r05FfU0ReHlSvDiXSvx\nhNqCND84eruyc7kepoAUMwKBgB2kr+08+ajwhuL20JMa8fqhimQYi1dxACzR8qky\nFLB5TlITCxm1GM5YSDJI5REP5uL3KYc8OVVLMgRe9Nb7bSa4DzLUqhreotPkrT6c\ns27aJbydkmeWmjRsvJdHfvtXaRVgerFFI/s1EYrRPDuzctfli6/PRgvGgyhsApOJ\n+TPtAoGBAIxqTh86sgkTMWiuRsZ/RrtfUFgtyrLZ6jMzvZsGGOn4EOVAKp3ytpmn\n7HaeZ+O3G4DrtkKXCrruk6IbEEXgmqv4l+2IBU/i7FVV3R9UDlWDbTkozHiu3eMU\nV+ty6N5CvYiC69fNPxeMYpfTYW6GEJ0az5nZ6vci0FBdlEJZxUHe\n-----END RSA PRIVATE KEY-----",
+      "pm_addr": "192.168.0.1",
+      "capabilities": "profile:control",
+      "name": "overcloud-ctrl02"
+    },
+    {
+      "pm_user": "stack",
+      "mac": [
+        "52:54:00:20:44:ad"
+      ],
+      "pm_type": "pxe_ssh",
+      "pm_password": "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEAtjU5k30uCq8a74vG1ywsAp9/mVrZyA+x3xMIdflB00JegQPb\nQ3JMhQoOeumB43ZJ9MfCh/ztGkZ8dZnSo4Da8oQPau4GasydZ86mE57Am5MJRPEz\nsmgGJzTLw6vXYsP8NJSNkjB4lRncvznt774QB72a2utRLHAD+dddGlbMiA5JQngg\nV9+7Kpm4PUFDcVtZAx1qKxLyGX64GvDYinfeWoZljPpzXo/j2HhPDZZ/Y9/7kAod\nF3Ynlvc+nWssnIYUF4KeAUOiwdPd8yHxavU6MHUTE1fRHcxjxwldU4k9xscIhuFV\n3UwQofh1OA3abOnxb2QwPNkx0hnyHxYU8Sz1bQIDAQABAoIBAFW1e7vxKnNEIzuD\nWKlm0dz6Ah+1KLR/DYCNh3FXKquhkKrHkaCMZ4o9TMpshPjmb6uBO/ST+URe27TG\nAtt+hX+Gt2npRYN/dJucDWs1RgzogXe4rkTBwgM3RpJohwyifESPjHiz7ETWwYwC\nR/Z6RTge7HUGNEze9D/WGqmFIvjsVDUPiadA0TlzGIF8/oKxjFpEbUmbicb8XB38\n6fs1TYFdQ5ykM3/ce7uSVvsaxXD0STOVnvwAOFRoh0D0jDcbMWuxb52W/X7Zbhaz\n/5U4uX6SCtQL6F8QALpauT/ElZekv+olfR1uKJx45XwYLBYNr8MJJppFIJ9fEgSw\nTdUS2tECgYEA3L+0grdlVsIjsnOh9CQrhuK8Rd61m2f6ejMLmT9IxXpRMt6a7YJ6\naf9uyRWwcNykHdjqd1vqPangj+ViOMzI2e7bZkiaDj+F5qDkruUeMWjMhWG2yFs0\naCVNdKYBzeqZbwjszcDWmFind7KFcYYsZg0nhcZIv4hCEBHX9ZG0+7MCgYEA003z\nsNYJL6yvZ5KA6qhupCgDRocVqZS7uI4aQtjKxvmP7//r3JZtzVqQhwTwLuqrfTBo\nNEjbO28w06S0X5GhDh92Mh2m/y9wK95lVVAxU9rtiFyjbB6RNWAzym4aebC2H5At\n7594k0UE13r9TB4IADvMP1g04Km1dYkFgCePOl8CgYBzw/FlT8pMWlmgHzYCs+lD\nvqpftfDlg/z+ksB1aJPARGpK1CTJg9Cwv+0YdVBnj75djMFBQSmxluIWdIQzJ2n5\nqGLU3CQ2bqfJD/19nthbrwr6tAjIP9RW/aEGGHz/wRUf/r05FfU0ReHlSvDiXSvx\nhNqCND84eruyc7kepoAUMwKBgB2kr+08+ajwhuL20JMa8fqhimQYi1dxACzR8qky\nFLB5TlITCxm1GM5YSDJI5REP5uL3KYc8OVVLMgRe9Nb7bSa4DzLUqhreotPkrT6c\ns27aJbydkmeWmjRsvJdHfvtXaRVgerFFI/s1EYrRPDuzctfli6/PRgvGgyhsApOJ\n+TPtAoGBAIxqTh86sgkTMWiuRsZ/RrtfUFgtyrLZ6jMzvZsGGOn4EOVAKp3ytpmn\n7HaeZ+O3G4DrtkKXCrruk6IbEEXgmqv4l+2IBU/i7FVV3R9UDlWDbTkozHiu3eMU\nV+ty6N5CvYiC69fNPxeMYpfTYW6GEJ0az5nZ6vci0FBdlEJZxUHe\n-----END RSA PRIVATE KEY-----",
+      "pm_addr": "192.168.0.1",
+      "capabilities": "profile:control",
+      "name": "overcloud-ctrl03"
+    },
+    {
+      "pm_user": "stack",
+      "mac": [
+        "52:54:00:55:7b:6e"
+      ],
+      "pm_type": "pxe_ssh",
+      "pm_password": "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEAtjU5k30uCq8a74vG1ywsAp9/mVrZyA+x3xMIdflB00JegQPb\nQ3JMhQoOeumB43ZJ9MfCh/ztGkZ8dZnSo4Da8oQPau4GasydZ86mE57Am5MJRPEz\nsmgGJzTLw6vXYsP8NJSNkjB4lRncvznt774QB72a2utRLHAD+dddGlbMiA5JQngg\nV9+7Kpm4PUFDcVtZAx1qKxLyGX64GvDYinfeWoZljPpzXo/j2HhPDZZ/Y9/7kAod\nF3Ynlvc+nWssnIYUF4KeAUOiwdPd8yHxavU6MHUTE1fRHcxjxwldU4k9xscIhuFV\n3UwQofh1OA3abOnxb2QwPNkx0hnyHxYU8Sz1bQIDAQABAoIBAFW1e7vxKnNEIzuD\nWKlm0dz6Ah+1KLR/DYCNh3FXKquhkKrHkaCMZ4o9TMpshPjmb6uBO/ST+URe27TG\nAtt+hX+Gt2npRYN/dJucDWs1RgzogXe4rkTBwgM3RpJohwyifESPjHiz7ETWwYwC\nR/Z6RTge7HUGNEze9D/WGqmFIvjsVDUPiadA0TlzGIF8/oKxjFpEbUmbicb8XB38\n6fs1TYFdQ5ykM3/ce7uSVvsaxXD0STOVnvwAOFRoh0D0jDcbMWuxb52W/X7Zbhaz\n/5U4uX6SCtQL6F8QALpauT/ElZekv+olfR1uKJx45XwYLBYNr8MJJppFIJ9fEgSw\nTdUS2tECgYEA3L+0grdlVsIjsnOh9CQrhuK8Rd61m2f6ejMLmT9IxXpRMt6a7YJ6\naf9uyRWwcNykHdjqd1vqPangj+ViOMzI2e7bZkiaDj+F5qDkruUeMWjMhWG2yFs0\naCVNdKYBzeqZbwjszcDWmFind7KFcYYsZg0nhcZIv4hCEBHX9ZG0+7MCgYEA003z\nsNYJL6yvZ5KA6qhupCgDRocVqZS7uI4aQtjKxvmP7//r3JZtzVqQhwTwLuqrfTBo\nNEjbO28w06S0X5GhDh92Mh2m/y9wK95lVVAxU9rtiFyjbB6RNWAzym4aebC2H5At\n7594k0UE13r9TB4IADvMP1g04Km1dYkFgCePOl8CgYBzw/FlT8pMWlmgHzYCs+lD\nvqpftfDlg/z+ksB1aJPARGpK1CTJg9Cwv+0YdVBnj75djMFBQSmxluIWdIQzJ2n5\nqGLU3CQ2bqfJD/19nthbrwr6tAjIP9RW/aEGGHz/wRUf/r05FfU0ReHlSvDiXSvx\nhNqCND84eruyc7kepoAUMwKBgB2kr+08+ajwhuL20JMa8fqhimQYi1dxACzR8qky\nFLB5TlITCxm1GM5YSDJI5REP5uL3KYc8OVVLMgRe9Nb7bSa4DzLUqhreotPkrT6c\ns27aJbydkmeWmjRsvJdHfvtXaRVgerFFI/s1EYrRPDuzctfli6/PRgvGgyhsApOJ\n+TPtAoGBAIxqTh86sgkTMWiuRsZ/RrtfUFgtyrLZ6jMzvZsGGOn4EOVAKp3ytpmn\n7HaeZ+O3G4DrtkKXCrruk6IbEEXgmqv4l+2IBU/i7FVV3R9UDlWDbTkozHiu3eMU\nV+ty6N5CvYiC69fNPxeMYpfTYW6GEJ0az5nZ6vci0FBdlEJZxUHe\n-----END RSA PRIVATE KEY-----",
+      "pm_addr": "192.168.0.1",
+      "capabilities": "profile:compute",
+      "name": "overcloud-compute01"
+    },
+    {
+      "pm_user": "stack",
+      "mac": [
+        "52:54:00:90:96:f3"
+      ],
+      "pm_type": "pxe_ssh",
+      "pm_password": "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEAtjU5k30uCq8a74vG1ywsAp9/mVrZyA+x3xMIdflB00JegQPb\nQ3JMhQoOeumB43ZJ9MfCh/ztGkZ8dZnSo4Da8oQPau4GasydZ86mE57Am5MJRPEz\nsmgGJzTLw6vXYsP8NJSNkjB4lRncvznt774QB72a2utRLHAD+dddGlbMiA5JQngg\nV9+7Kpm4PUFDcVtZAx1qKxLyGX64GvDYinfeWoZljPpzXo/j2HhPDZZ/Y9/7kAod\nF3Ynlvc+nWssnIYUF4KeAUOiwdPd8yHxavU6MHUTE1fRHcxjxwldU4k9xscIhuFV\n3UwQofh1OA3abOnxb2QwPNkx0hnyHxYU8Sz1bQIDAQABAoIBAFW1e7vxKnNEIzuD\nWKlm0dz6Ah+1KLR/DYCNh3FXKquhkKrHkaCMZ4o9TMpshPjmb6uBO/ST+URe27TG\nAtt+hX+Gt2npRYN/dJucDWs1RgzogXe4rkTBwgM3RpJohwyifESPjHiz7ETWwYwC\nR/Z6RTge7HUGNEze9D/WGqmFIvjsVDUPiadA0TlzGIF8/oKxjFpEbUmbicb8XB38\n6fs1TYFdQ5ykM3/ce7uSVvsaxXD0STOVnvwAOFRoh0D0jDcbMWuxb52W/X7Zbhaz\n/5U4uX6SCtQL6F8QALpauT/ElZekv+olfR1uKJx45XwYLBYNr8MJJppFIJ9fEgSw\nTdUS2tECgYEA3L+0grdlVsIjsnOh9CQrhuK8Rd61m2f6ejMLmT9IxXpRMt6a7YJ6\naf9uyRWwcNykHdjqd1vqPangj+ViOMzI2e7bZkiaDj+F5qDkruUeMWjMhWG2yFs0\naCVNdKYBzeqZbwjszcDWmFind7KFcYYsZg0nhcZIv4hCEBHX9ZG0+7MCgYEA003z\nsNYJL6yvZ5KA6qhupCgDRocVqZS7uI4aQtjKxvmP7//r3JZtzVqQhwTwLuqrfTBo\nNEjbO28w06S0X5GhDh92Mh2m/y9wK95lVVAxU9rtiFyjbB6RNWAzym4aebC2H5At\n7594k0UE13r9TB4IADvMP1g04Km1dYkFgCePOl8CgYBzw/FlT8pMWlmgHzYCs+lD\nvqpftfDlg/z+ksB1aJPARGpK1CTJg9Cwv+0YdVBnj75djMFBQSmxluIWdIQzJ2n5\nqGLU3CQ2bqfJD/19nthbrwr6tAjIP9RW/aEGGHz/wRUf/r05FfU0ReHlSvDiXSvx\nhNqCND84eruyc7kepoAUMwKBgB2kr+08+ajwhuL20JMa8fqhimQYi1dxACzR8qky\nFLB5TlITCxm1GM5YSDJI5REP5uL3KYc8OVVLMgRe9Nb7bSa4DzLUqhreotPkrT6c\ns27aJbydkmeWmjRsvJdHfvtXaRVgerFFI/s1EYrRPDuzctfli6/PRgvGgyhsApOJ\n+TPtAoGBAIxqTh86sgkTMWiuRsZ/RrtfUFgtyrLZ6jMzvZsGGOn4EOVAKp3ytpmn\n7HaeZ+O3G4DrtkKXCrruk6IbEEXgmqv4l+2IBU/i7FVV3R9UDlWDbTkozHiu3eMU\nV+ty6N5CvYiC69fNPxeMYpfTYW6GEJ0az5nZ6vci0FBdlEJZxUHe\n-----END RSA PRIVATE KEY-----",
+      "pm_addr": "192.168.0.1",
+      "capabilities": "profile:compute",
+      "name": "overcloud-compute02"
+    },
+    {
+      "pm_user": "stack",
+      "mac": [
+        "52:54:00:38:e7:3f"
+      ],
+      "pm_type": "pxe_ssh",
+      "pm_password": "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEAtjU5k30uCq8a74vG1ywsAp9/mVrZyA+x3xMIdflB00JegQPb\nQ3JMhQoOeumB43ZJ9MfCh/ztGkZ8dZnSo4Da8oQPau4GasydZ86mE57Am5MJRPEz\nsmgGJzTLw6vXYsP8NJSNkjB4lRncvznt774QB72a2utRLHAD+dddGlbMiA5JQngg\nV9+7Kpm4PUFDcVtZAx1qKxLyGX64GvDYinfeWoZljPpzXo/j2HhPDZZ/Y9/7kAod\nF3Ynlvc+nWssnIYUF4KeAUOiwdPd8yHxavU6MHUTE1fRHcxjxwldU4k9xscIhuFV\n3UwQofh1OA3abOnxb2QwPNkx0hnyHxYU8Sz1bQIDAQABAoIBAFW1e7vxKnNEIzuD\nWKlm0dz6Ah+1KLR/DYCNh3FXKquhkKrHkaCMZ4o9TMpshPjmb6uBO/ST+URe27TG\nAtt+hX+Gt2npRYN/dJucDWs1RgzogXe4rkTBwgM3RpJohwyifESPjHiz7ETWwYwC\nR/Z6RTge7HUGNEze9D/WGqmFIvjsVDUPiadA0TlzGIF8/oKxjFpEbUmbicb8XB38\n6fs1TYFdQ5ykM3/ce7uSVvsaxXD0STOVnvwAOFRoh0D0jDcbMWuxb52W/X7Zbhaz\n/5U4uX6SCtQL6F8QALpauT/ElZekv+olfR1uKJx45XwYLBYNr8MJJppFIJ9fEgSw\nTdUS2tECgYEA3L+0grdlVsIjsnOh9CQrhuK8Rd61m2f6ejMLmT9IxXpRMt6a7YJ6\naf9uyRWwcNykHdjqd1vqPangj+ViOMzI2e7bZkiaDj+F5qDkruUeMWjMhWG2yFs0\naCVNdKYBzeqZbwjszcDWmFind7KFcYYsZg0nhcZIv4hCEBHX9ZG0+7MCgYEA003z\nsNYJL6yvZ5KA6qhupCgDRocVqZS7uI4aQtjKxvmP7//r3JZtzVqQhwTwLuqrfTBo\nNEjbO28w06S0X5GhDh92Mh2m/y9wK95lVVAxU9rtiFyjbB6RNWAzym4aebC2H5At\n7594k0UE13r9TB4IADvMP1g04Km1dYkFgCePOl8CgYBzw/FlT8pMWlmgHzYCs+lD\nvqpftfDlg/z+ksB1aJPARGpK1CTJg9Cwv+0YdVBnj75djMFBQSmxluIWdIQzJ2n5\nqGLU3CQ2bqfJD/19nthbrwr6tAjIP9RW/aEGGHz/wRUf/r05FfU0ReHlSvDiXSvx\nhNqCND84eruyc7kepoAUMwKBgB2kr+08+ajwhuL20JMa8fqhimQYi1dxACzR8qky\nFLB5TlITCxm1GM5YSDJI5REP5uL3KYc8OVVLMgRe9Nb7bSa4DzLUqhreotPkrT6c\ns27aJbydkmeWmjRsvJdHfvtXaRVgerFFI/s1EYrRPDuzctfli6/PRgvGgyhsApOJ\n+TPtAoGBAIxqTh86sgkTMWiuRsZ/RrtfUFgtyrLZ6jMzvZsGGOn4EOVAKp3ytpmn\n7HaeZ+O3G4DrtkKXCrruk6IbEEXgmqv4l+2IBU/i7FVV3R9UDlWDbTkozHiu3eMU\nV+ty6N5CvYiC69fNPxeMYpfTYW6GEJ0az5nZ6vci0FBdlEJZxUHe\n-----END RSA PRIVATE KEY-----",
+      "pm_addr": "192.168.0.1",
+      "capabilities": "profile:ceph-storage",
+      "name": "overcloud-ceph01"
+    },
+    {
+      "pm_user": "stack",
+      "mac": [
+        "52:54:00:40:83:7f"
+      ],
+      "pm_type": "pxe_ssh",
+      "pm_password": "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEAtjU5k30uCq8a74vG1ywsAp9/mVrZyA+x3xMIdflB00JegQPb\nQ3JMhQoOeumB43ZJ9MfCh/ztGkZ8dZnSo4Da8oQPau4GasydZ86mE57Am5MJRPEz\nsmgGJzTLw6vXYsP8NJSNkjB4lRncvznt774QB72a2utRLHAD+dddGlbMiA5JQngg\nV9+7Kpm4PUFDcVtZAx1qKxLyGX64GvDYinfeWoZljPpzXo/j2HhPDZZ/Y9/7kAod\nF3Ynlvc+nWssnIYUF4KeAUOiwdPd8yHxavU6MHUTE1fRHcxjxwldU4k9xscIhuFV\n3UwQofh1OA3abOnxb2QwPNkx0hnyHxYU8Sz1bQIDAQABAoIBAFW1e7vxKnNEIzuD\nWKlm0dz6Ah+1KLR/DYCNh3FXKquhkKrHkaCMZ4o9TMpshPjmb6uBO/ST+URe27TG\nAtt+hX+Gt2npRYN/dJucDWs1RgzogXe4rkTBwgM3RpJohwyifESPjHiz7ETWwYwC\nR/Z6RTge7HUGNEze9D/WGqmFIvjsVDUPiadA0TlzGIF8/oKxjFpEbUmbicb8XB38\n6fs1TYFdQ5ykM3/ce7uSVvsaxXD0STOVnvwAOFRoh0D0jDcbMWuxb52W/X7Zbhaz\n/5U4uX6SCtQL6F8QALpauT/ElZekv+olfR1uKJx45XwYLBYNr8MJJppFIJ9fEgSw\nTdUS2tECgYEA3L+0grdlVsIjsnOh9CQrhuK8Rd61m2f6ejMLmT9IxXpRMt6a7YJ6\naf9uyRWwcNykHdjqd1vqPangj+ViOMzI2e7bZkiaDj+F5qDkruUeMWjMhWG2yFs0\naCVNdKYBzeqZbwjszcDWmFind7KFcYYsZg0nhcZIv4hCEBHX9ZG0+7MCgYEA003z\nsNYJL6yvZ5KA6qhupCgDRocVqZS7uI4aQtjKxvmP7//r3JZtzVqQhwTwLuqrfTBo\nNEjbO28w06S0X5GhDh92Mh2m/y9wK95lVVAxU9rtiFyjbB6RNWAzym4aebC2H5At\n7594k0UE13r9TB4IADvMP1g04Km1dYkFgCePOl8CgYBzw/FlT8pMWlmgHzYCs+lD\nvqpftfDlg/z+ksB1aJPARGpK1CTJg9Cwv+0YdVBnj75djMFBQSmxluIWdIQzJ2n5\nqGLU3CQ2bqfJD/19nthbrwr6tAjIP9RW/aEGGHz/wRUf/r05FfU0ReHlSvDiXSvx\nhNqCND84eruyc7kepoAUMwKBgB2kr+08+ajwhuL20JMa8fqhimQYi1dxACzR8qky\nFLB5TlITCxm1GM5YSDJI5REP5uL3KYc8OVVLMgRe9Nb7bSa4DzLUqhreotPkrT6c\ns27aJbydkmeWmjRsvJdHfvtXaRVgerFFI/s1EYrRPDuzctfli6/PRgvGgyhsApOJ\n+TPtAoGBAIxqTh86sgkTMWiuRsZ/RrtfUFgtyrLZ6jMzvZsGGOn4EOVAKp3ytpmn\n7HaeZ+O3G4DrtkKXCrruk6IbEEXgmqv4l+2IBU/i7FVV3R9UDlWDbTkozHiu3eMU\nV+ty6N5CvYiC69fNPxeMYpfTYW6GEJ0az5nZ6vci0FBdlEJZxUHe\n-----END RSA PRIVATE KEY-----",
+      "pm_addr": "192.168.0.1",
+      "capabilities": "profile:ceph-storage",
+      "name": "overcloud-ceph02"
+    },
+    {
+      "pm_user": "stack",
+      "mac": [
+        "52:54:00:37:c9:01"
+      ],
+      "pm_type": "pxe_ssh",
+      "pm_password": "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEAtjU5k30uCq8a74vG1ywsAp9/mVrZyA+x3xMIdflB00JegQPb\nQ3JMhQoOeumB43ZJ9MfCh/ztGkZ8dZnSo4Da8oQPau4GasydZ86mE57Am5MJRPEz\nsmgGJzTLw6vXYsP8NJSNkjB4lRncvznt774QB72a2utRLHAD+dddGlbMiA5JQngg\nV9+7Kpm4PUFDcVtZAx1qKxLyGX64GvDYinfeWoZljPpzXo/j2HhPDZZ/Y9/7kAod\nF3Ynlvc+nWssnIYUF4KeAUOiwdPd8yHxavU6MHUTE1fRHcxjxwldU4k9xscIhuFV\n3UwQofh1OA3abOnxb2QwPNkx0hnyHxYU8Sz1bQIDAQABAoIBAFW1e7vxKnNEIzuD\nWKlm0dz6Ah+1KLR/DYCNh3FXKquhkKrHkaCMZ4o9TMpshPjmb6uBO/ST+URe27TG\nAtt+hX+Gt2npRYN/dJucDWs1RgzogXe4rkTBwgM3RpJohwyifESPjHiz7ETWwYwC\nR/Z6RTge7HUGNEze9D/WGqmFIvjsVDUPiadA0TlzGIF8/oKxjFpEbUmbicb8XB38\n6fs1TYFdQ5ykM3/ce7uSVvsaxXD0STOVnvwAOFRoh0D0jDcbMWuxb52W/X7Zbhaz\n/5U4uX6SCtQL6F8QALpauT/ElZekv+olfR1uKJx45XwYLBYNr8MJJppFIJ9fEgSw\nTdUS2tECgYEA3L+0grdlVsIjsnOh9CQrhuK8Rd61m2f6ejMLmT9IxXpRMt6a7YJ6\naf9uyRWwcNykHdjqd1vqPangj+ViOMzI2e7bZkiaDj+F5qDkruUeMWjMhWG2yFs0\naCVNdKYBzeqZbwjszcDWmFind7KFcYYsZg0nhcZIv4hCEBHX9ZG0+7MCgYEA003z\nsNYJL6yvZ5KA6qhupCgDRocVqZS7uI4aQtjKxvmP7//r3JZtzVqQhwTwLuqrfTBo\nNEjbO28w06S0X5GhDh92Mh2m/y9wK95lVVAxU9rtiFyjbB6RNWAzym4aebC2H5At\n7594k0UE13r9TB4IADvMP1g04Km1dYkFgCePOl8CgYBzw/FlT8pMWlmgHzYCs+lD\nvqpftfDlg/z+ksB1aJPARGpK1CTJg9Cwv+0YdVBnj75djMFBQSmxluIWdIQzJ2n5\nqGLU3CQ2bqfJD/19nthbrwr6tAjIP9RW/aEGGHz/wRUf/r05FfU0ReHlSvDiXSvx\nhNqCND84eruyc7kepoAUMwKBgB2kr+08+ajwhuL20JMa8fqhimQYi1dxACzR8qky\nFLB5TlITCxm1GM5YSDJI5REP5uL3KYc8OVVLMgRe9Nb7bSa4DzLUqhreotPkrT6c\ns27aJbydkmeWmjRsvJdHfvtXaRVgerFFI/s1EYrRPDuzctfli6/PRgvGgyhsApOJ\n+TPtAoGBAIxqTh86sgkTMWiuRsZ/RrtfUFgtyrLZ6jMzvZsGGOn4EOVAKp3ytpmn\n7HaeZ+O3G4DrtkKXCrruk6IbEEXgmqv4l+2IBU/i7FVV3R9UDlWDbTkozHiu3eMU\nV+ty6N5CvYiC69fNPxeMYpfTYW6GEJ0az5nZ6vci0FBdlEJZxUHe\n-----END RSA PRIVATE KEY-----",
+      "pm_addr": "192.168.0.1",
+      "capabilities": "profile:ceph-storage",
+      "name": "overcloud-ceph03"
+    },
+    {
+      "pm_user": "stack",
+      "mac": [
+        "52:54:00:01:65:d6"
+      ],
+      "pm_type": "pxe_ssh",
+      "pm_password": "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEAtjU5k30uCq8a74vG1ywsAp9/mVrZyA+x3xMIdflB00JegQPb\nQ3JMhQoOeumB43ZJ9MfCh/ztGkZ8dZnSo4Da8oQPau4GasydZ86mE57Am5MJRPEz\nsmgGJzTLw6vXYsP8NJSNkjB4lRncvznt774QB72a2utRLHAD+dddGlbMiA5JQngg\nV9+7Kpm4PUFDcVtZAx1qKxLyGX64GvDYinfeWoZljPpzXo/j2HhPDZZ/Y9/7kAod\nF3Ynlvc+nWssnIYUF4KeAUOiwdPd8yHxavU6MHUTE1fRHcxjxwldU4k9xscIhuFV\n3UwQofh1OA3abOnxb2QwPNkx0hnyHxYU8Sz1bQIDAQABAoIBAFW1e7vxKnNEIzuD\nWKlm0dz6Ah+1KLR/DYCNh3FXKquhkKrHkaCMZ4o9TMpshPjmb6uBO/ST+URe27TG\nAtt+hX+Gt2npRYN/dJucDWs1RgzogXe4rkTBwgM3RpJohwyifESPjHiz7ETWwYwC\nR/Z6RTge7HUGNEze9D/WGqmFIvjsVDUPiadA0TlzGIF8/oKxjFpEbUmbicb8XB38\n6fs1TYFdQ5ykM3/ce7uSVvsaxXD0STOVnvwAOFRoh0D0jDcbMWuxb52W/X7Zbhaz\n/5U4uX6SCtQL6F8QALpauT/ElZekv+olfR1uKJx45XwYLBYNr8MJJppFIJ9fEgSw\nTdUS2tECgYEA3L+0grdlVsIjsnOh9CQrhuK8Rd61m2f6ejMLmT9IxXpRMt6a7YJ6\naf9uyRWwcNykHdjqd1vqPangj+ViOMzI2e7bZkiaDj+F5qDkruUeMWjMhWG2yFs0\naCVNdKYBzeqZbwjszcDWmFind7KFcYYsZg0nhcZIv4hCEBHX9ZG0+7MCgYEA003z\nsNYJL6yvZ5KA6qhupCgDRocVqZS7uI4aQtjKxvmP7//r3JZtzVqQhwTwLuqrfTBo\nNEjbO28w06S0X5GhDh92Mh2m/y9wK95lVVAxU9rtiFyjbB6RNWAzym4aebC2H5At\n7594k0UE13r9TB4IADvMP1g04Km1dYkFgCePOl8CgYBzw/FlT8pMWlmgHzYCs+lD\nvqpftfDlg/z+ksB1aJPARGpK1CTJg9Cwv+0YdVBnj75djMFBQSmxluIWdIQzJ2n5\nqGLU3CQ2bqfJD/19nthbrwr6tAjIP9RW/aEGGHz/wRUf/r05FfU0ReHlSvDiXSvx\nhNqCND84eruyc7kepoAUMwKBgB2kr+08+ajwhuL20JMa8fqhimQYi1dxACzR8qky\nFLB5TlITCxm1GM5YSDJI5REP5uL3KYc8OVVLMgRe9Nb7bSa4DzLUqhreotPkrT6c\ns27aJbydkmeWmjRsvJdHfvtXaRVgerFFI/s1EYrRPDuzctfli6/PRgvGgyhsApOJ\n+TPtAoGBAIxqTh86sgkTMWiuRsZ/RrtfUFgtyrLZ6jMzvZsGGOn4EOVAKp3ytpmn\n7HaeZ+O3G4DrtkKXCrruk6IbEEXgmqv4l+2IBU/i7FVV3R9UDlWDbTkozHiu3eMU\nV+ty6N5CvYiC69fNPxeMYpfTYW6GEJ0az5nZ6vci0FBdlEJZxUHe\n-----END RSA PRIVATE KEY-----",
+      "pm_addr": "192.168.0.1",
+      "capabilities": "profile:networker",
+      "name": "overcloud-networker"
+    }
+  ]
+}
+
+
+
+
+
+
+
+[stack@undercloud ~]$ source ~/stackrc
+[stack@undercloud ~]$ openstack baremetal instackenv validate
+
+SUCCESS: found 0 errors
+
+
+
+openstack baremetal import --json instackenv.json
+
+SUCCESS: found 0 errors
+
+[stack@undercloud ~]$ openstack baremetal import --json instackenv.json
+This command is deprecated. Please use "openstack overcloud node import" to register nodes instead.
+Started Mistral Workflow tripleo.baremetal.v1.register_or_update. Execution ID: fd957d12-f06b-4a9c-9ff8-015fc7c2b4a7
+Waiting for messages on queue '5e284a80-9520-4738-b500-0cf2294d24ca' with no timeout.
+Successfully registered node UUID 27a4a783-ecdc-4e9f-b010-4a6be1df8a4f
+Successfully registered node UUID c135c779-7f67-4f7d-a071-5f77c7d757e9
+Successfully registered node UUID 10c459d0-c974-4d5f-80b6-1213b68633a6
+Successfully registered node UUID 24faed30-1cfc-462a-b8dc-3b13d3c93994
+Successfully registered node UUID 86400344-72f5-495f-9d6c-7f491431ba23
+Successfully registered node UUID ca05263e-efb9-4dda-87b5-87db7935d928
+Successfully registered node UUID 19d52e39-22fd-4989-900a-68dd285acbf6
+Successfully registered node UUID aa936fd0-44b4-43e2-a8af-6498c4693945
+Successfully registered node UUID a39ec4af-7326-407f-b0ba-c1e7ec10d921
+
+
+[stack@undercloud ~]$ openstack baremetal node list
++--------------------------------------+---------------------+---------------+-------------+--------------------+-------------+
+| UUID                                 | Name                | Instance UUID | Power State | Provisioning State | Maintenance |
++--------------------------------------+---------------------+---------------+-------------+--------------------+-------------+
+| 27a4a783-ecdc-4e9f-b010-4a6be1df8a4f | overcloud-ctrl01    | None          | power off   | available          | False       |
+| c135c779-7f67-4f7d-a071-5f77c7d757e9 | overcloud-ctrl02    | None          | power off   | available          | False       |
+| 10c459d0-c974-4d5f-80b6-1213b68633a6 | overcloud-ctrl03    | None          | power off   | available          | False       |
+| 24faed30-1cfc-462a-b8dc-3b13d3c93994 | overcloud-compute01 | None          | power off   | available          | False       |
+| 86400344-72f5-495f-9d6c-7f491431ba23 | overcloud-compute02 | None          | power off   | available          | False       |
+| ca05263e-efb9-4dda-87b5-87db7935d928 | overcloud-ceph01    | None          | power off   | available          | False       |
+| 19d52e39-22fd-4989-900a-68dd285acbf6 | overcloud-ceph02    | None          | power off   | available          | False       |
+| aa936fd0-44b4-43e2-a8af-6498c4693945 | overcloud-ceph03    | None          | power off   | available          | False       |
+| a39ec4af-7326-407f-b0ba-c1e7ec10d921 | overcloud-networker | None          | power off   | available          | False       |
++--------------------------------------+---------------------+---------------+-------------+--------------------+-------------+
+[stack@undercloud ~]$ 
+[stack@undercloud ~]$ 
+[stack@undercloud ~]$ 
+[stack@undercloud ~]$ 
+[stack@undercloud ~]$ for i in $(openstack baremetal node list -c Name -f value; do openstack baremetal node manage $i; done
+> 
+> ^C
+[stack@undercloud ~]$ #for i in $(openstack baremetal node list -c Name -f value); do openstack baremetal node manage $i; done
+[stack@undercloud ~]$ for i in $(openstack baremetal node list -c Name -f value); do openstack baremetal node manage $i; done
+[stack@undercloud ~]$ openstack baremetal node list
++--------------------------------------+---------------------+---------------+-------------+--------------------+-------------+
+| UUID                                 | Name                | Instance UUID | Power State | Provisioning State | Maintenance |
++--------------------------------------+---------------------+---------------+-------------+--------------------+-------------+
+| 27a4a783-ecdc-4e9f-b010-4a6be1df8a4f | overcloud-ctrl01    | None          | power off   | manageable         | False       |
+| c135c779-7f67-4f7d-a071-5f77c7d757e9 | overcloud-ctrl02    | None          | power off   | manageable         | False       |
+| 10c459d0-c974-4d5f-80b6-1213b68633a6 | overcloud-ctrl03    | None          | power off   | manageable         | False       |
+| 24faed30-1cfc-462a-b8dc-3b13d3c93994 | overcloud-compute01 | None          | power off   | manageable         | False       |
+| 86400344-72f5-495f-9d6c-7f491431ba23 | overcloud-compute02 | None          | power off   | manageable         | False       |
+| ca05263e-efb9-4dda-87b5-87db7935d928 | overcloud-ceph01    | None          | power off   | manageable         | False       |
+| 19d52e39-22fd-4989-900a-68dd285acbf6 | overcloud-ceph02    | None          | power off   | manageable         | False       |
+| aa936fd0-44b4-43e2-a8af-6498c4693945 | overcloud-ceph03    | None          | power off   | manageable         | False       |
+| a39ec4af-7326-407f-b0ba-c1e7ec10d921 | overcloud-networker | None          | power off   | manageable         | False       |
++--------------------------------------+---------------------+---------------+-------------+--------------------+-------------+
+
+
+[stack@undercloud ~]$ openstack overcloud node introspect --all-manageable --provide
+Started Mistral Workflow tripleo.baremetal.v1.introspect_manageable_nodes. Execution ID: f1c8a423-c2f6-4bd4-870b-066387396842
+Waiting for introspection to finish...
+Waiting for messages on queue '04ef6539-9adf-4e87-9d67-50d0eccea3bd' with no timeout.
+Introspection for UUID c135c779-7f67-4f7d-a071-5f77c7d757e9 finished successfully.
+Introspection for UUID aa936fd0-44b4-43e2-a8af-6498c4693945 finished successfully.
+Introspection for UUID 27a4a783-ecdc-4e9f-b010-4a6be1df8a4f finished successfully.
+Introspection for UUID 86400344-72f5-495f-9d6c-7f491431ba23 finished successfully.
+Introspection for UUID 10c459d0-c974-4d5f-80b6-1213b68633a6 finished successfully.
+Introspection for UUID ca05263e-efb9-4dda-87b5-87db7935d928 finished successfully.
+Introspection for UUID a39ec4af-7326-407f-b0ba-c1e7ec10d921 finished successfully.
+Introspection for UUID 19d52e39-22fd-4989-900a-68dd285acbf6 finished successfully.
+Introspection for UUID 24faed30-1cfc-462a-b8dc-3b13d3c93994 finished successfully.
+Introspection completed.
+Started Mistral Workflow tripleo.baremetal.v1.provide_manageable_nodes. Execution ID: 774f0147-4993-45a2-aca7-74410f9e4866
+Waiting for messages on queue '04ef6539-9adf-4e87-9d67-50d0eccea3bd' with no timeout.
+
+
+[stack@undercloud ~]$ openstack baremetal introspection bulk status
++--------------------------------------+----------+-------+
+| Node UUID                            | Finished | Error |
++--------------------------------------+----------+-------+
+| 27a4a783-ecdc-4e9f-b010-4a6be1df8a4f | True     | None  |
+| c135c779-7f67-4f7d-a071-5f77c7d757e9 | True     | None  |
+| 10c459d0-c974-4d5f-80b6-1213b68633a6 | True     | None  |
+| 24faed30-1cfc-462a-b8dc-3b13d3c93994 | True     | None  |
+| 86400344-72f5-495f-9d6c-7f491431ba23 | True     | None  |
+| ca05263e-efb9-4dda-87b5-87db7935d928 | True     | None  |
+| 19d52e39-22fd-4989-900a-68dd285acbf6 | True     | None  |
+| aa936fd0-44b4-43e2-a8af-6498c4693945 | True     | None  |
+| a39ec4af-7326-407f-b0ba-c1e7ec10d921 | True     | None  |
++--------------------------------------+----------+-------+
+
+[stack@undercloud ~]$ openstack baremetal node show 27a4a783-ecdc-4e9f-b010-4a6be1df8a4f | grep extra
+| extra                  | {u'hardware_swift_object': u'extra_hardware-27a4a783-ecdc-4e9f-b010-4a6be1df8a4f'}                                                                                                                                                             |
+[stack@undercloud ~]$ openstack baremetal node show c135c779-7f67-4f7d-a071-5f77c7d757e9 | grep extra
+| extra                  | {u'hardware_swift_object': u'extra_hardware-c135c779-7f67-4f7d-a071-5f77c7d757e9'}                                                                                                                                                             |
+[stack@undercloud ~]$ 
+[stack@undercloud ~]$ 
+[stack@undercloud ~]$ mkdir -p ~/hardware-specs && cd ~/hardware-specs
+[stack@undercloud hardware-specs]$ openstack baremetal introspection data save overcloud-ctrl01 --file overcloud-ctrl01
+[stack@undercloud hardware-specs]$ openstack baremetal introspection data save overcloud-ctrl02 --file overcloud-ctrl02
+[stack@undercloud hardware-specs]$ openstack baremetal introspection data save overcloud-ctrl03 --file overcloud-ctrl03
+[stack@undercloud hardware-specs]$ ls
+overcloud-ctrl01  overcloud-ctrl02  overcloud-ctrl03
+[stack@undercloud hardware-specs]$ 
+
+[stack@undercloud hardware-specs]$ python -m json.tool overcloud-ctrl02 | less
+{
+    "all_interfaces": {
+        "eth0": {
+            "client_id": null,
+            "ip": "172.16.0.152",
+            "mac": "52:54:00:38:9c:d8"
+        },
+        "eth1": {
+            "client_id": null,
+            "ip": null,
+            "mac": "52:54:00:d0:c9:ee"
+        },
+        "eth2": {
+            "client_id": null,
+            "ip": null,
+            "mac": "52:54:00:0c:aa:28"
+        }
+    },
+
+
+[stack@undercloud hardware-specs]$ IRONIC_PASSWORD=$(grep ironic ~/undercloud-passwords.conf  | cut -f2 -d '=')
+[stack@undercloud hardware-specs]$ OS_TENANT_NAME=service OS_USERNAME=ironic OS_PASSWORD=$IRONIC_PASSWORD swift list
+glance
+ironic-inspector
+[stack@undercloud hardware-specs]$ OS_TENANT_NAME=service OS_USERNAME=ironic OS_PASSWORD=$IRONIC_PASSWORD swift list ironic-inspector
+extra_hardware-10c459d0-c974-4d5f-80b6-1213b68633a6
+extra_hardware-19d52e39-22fd-4989-900a-68dd285acbf6
+extra_hardware-24faed30-1cfc-462a-b8dc-3b13d3c93994
+extra_hardware-27a4a783-ecdc-4e9f-b010-4a6be1df8a4f
+extra_hardware-86400344-72f5-495f-9d6c-7f491431ba23
+extra_hardware-a39ec4af-7326-407f-b0ba-c1e7ec10d921
+extra_hardware-aa936fd0-44b4-43e2-a8af-6498c4693945
+extra_hardware-c135c779-7f67-4f7d-a071-5f77c7d757e9
+extra_hardware-ca05263e-efb9-4dda-87b5-87db7935d928
+inspector_data-10c459d0-c974-4d5f-80b6-1213b68633a6
+inspector_data-10c459d0-c974-4d5f-80b6-1213b68633a6-UNPROCESSED
+inspector_data-19d52e39-22fd-4989-900a-68dd285acbf6
+inspector_data-19d52e39-22fd-4989-900a-68dd285acbf6-UNPROCESSED
+inspector_data-24faed30-1cfc-462a-b8dc-3b13d3c93994
+inspector_data-24faed30-1cfc-462a-b8dc-3b13d3c93994-UNPROCESSED
+inspector_data-27a4a783-ecdc-4e9f-b010-4a6be1df8a4f
+inspector_data-27a4a783-ecdc-4e9f-b010-4a6be1df8a4f-UNPROCESSED
+inspector_data-86400344-72f5-495f-9d6c-7f491431ba23
+inspector_data-86400344-72f5-495f-9d6c-7f491431ba23-UNPROCESSED
+inspector_data-a39ec4af-7326-407f-b0ba-c1e7ec10d921
+inspector_data-a39ec4af-7326-407f-b0ba-c1e7ec10d921-UNPROCESSED
+inspector_data-aa936fd0-44b4-43e2-a8af-6498c4693945
+inspector_data-aa936fd0-44b4-43e2-a8af-6498c4693945-UNPROCESSED
+inspector_data-c135c779-7f67-4f7d-a071-5f77c7d757e9
+inspector_data-c135c779-7f67-4f7d-a071-5f77c7d757e9-UNPROCESSED
+inspector_data-ca05263e-efb9-4dda-87b5-87db7935d928
+inspector_data-ca05263e-efb9-4dda-87b5-87db7935d928-UNPROCESSED
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
