@@ -20,6 +20,6 @@ Como se menciono en la introducción, a cada asistente se le ha asignado una má
 image::./imagenes/L0-1.png[Host]
 
 
-Simplificando en gran medida la arquitectura, este host se usará para desplegar varias máquinas virtuales que conformarán tanto su undercloud como overcloud, siendo el host la plataforma de IPMI que usará Ironic para arrancar las máquinas virtuales. Podríamos usar fácilmente el hipervisor como undercloud, pero por limpieza desplegaremos la undercloud dentro de una máquina virtual:
+Para simplificar la arquitectura, este host se usará para desplegar varias máquinas virtuales que conformarán tanto su undercloud como overcloud, siendo el host la plataforma de IPMI que usará Ironic para arrancar las máquinas virtuales. Podríamos usar fácilmente el hipervisor como undercloud, pero por limpieza desplegaremos la undercloud dentro de una máquina virtual:
 
 image::./imagenes/L0-2.png[Undercloud]
