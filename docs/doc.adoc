@@ -17,5 +17,9 @@ Lo único que necesitará en su computadora portátil es su cliente SSH, y tal v
 Como se menciono en la introducción, a cada asistente se le ha asignado una máquina con 32 CPU, 96 GB de memoria y una conexión de 1 Gb de red corporativa (con un salto corto a todos los repositorios de paquetes que necesitaremos). Este será su Host durante la semana, nadie más tendrá acceso a él, y si tenemos que reconstruirlo podemos hacerlo por usted. Esta será nuestra plataforma para implementar nuestra infraestructura en la parte superior de:
 
 
-image::./imagenes/L0-1.png[test]
+image::./imagenes/L0-1.png[Host]
 
+
+Simplificando en gran medida la arquitectura, este host se usará para desplegar varias máquinas virtuales que conformarán tanto su undercloud como overcloud, siendo el host la plataforma de IPMI que usará Ironic para arrancar las máquinas virtuales. Podríamos usar fácilmente el hipervisor como undercloud, pero por limpieza desplegaremos la undercloud dentro de una máquina virtual:
+
+image::./imagenes/L0-2.png[Undercloud]
