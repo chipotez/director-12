@@ -26,3 +26,5 @@ image::./imagenes/L0-2.png[Undercloud]
 
 
 se agrega el domigo 4 de febrero.
+
+prubeda de sync 2.
