@@ -2,8 +2,21 @@
 [stack@undercloud images]$ sudo yum install rhosp-director-images rhosp-director-images-ipa
 [stack@undercloud images]$ sudo yum install libguestfs-tools-c
 cd ~/images
-for i in /usr/share/rhosp-director-images/overcloud-full-latest-11.0.tar /usr/share/rhosp-director-images/ironic-python-agent-latest-11.0.tar; do tar -xvf $i; done
+[stack@undercloud images]$ for i in /usr/share/rhosp-director-images/overcloud-full-latest-11.0.tar /usr/share/rhosp-director-images/ironic-python-agent-latest-11.0.tar; do tar -xvf $i; done
+overcloud-full.qcow2
+overcloud-full.initrd
+overcloud-full.vmlinuz
+overcloud-full-rpm.manifest
+overcloud-full-signature.manifest
+ironic-python-agent.initramfs
+ironic-python-agent.kernel
+
 virt-customize -a overcloud-full.qcow2     --root-password password:r3dh4t1!
+[   0.0] Examinando el invitado ...
+[  42.5] Setting a random seed
+[  42.5] Setting passwords
+[  70.3] Acabando
+
 [stack@undercloud images]$ source ~/stackrc
 [stack@undercloud images]$ openstack image list
 
