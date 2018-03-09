@@ -1,15 +1,33 @@
 [Undercloud-root]
-#hostname
+
 hostnamectl set-hostname undercloud.example.com
 systemctl restart network.service
+subscription-manager register --username=test-drive --password='redhat2018' --force
+subscription-manager attach --pool=8a85f98160e6119c0160e901ed9d765a
+subscription-manager repos --disable=* 
+subscription-manager repos --enable=rhel-7-server-rpms --enable=rhel-7-server-extras-rpms --enable=rhel-7-server-rh-common-rpms --enable=rhel-ha-for-rhel-7-server-rpms --enable=rhel-7-server-openstack-11-rpms
 yum -y install facter
-subscription-manager register
-subscription-manager attach --pool=8a85f9815dbd9297015dbdb8186b428d
-sudo subscription-manager repos --disable=* 
+ipaddr=$(facter ipaddress_eth1)
+echo -e "${ipaddr}\tundercloud undercloud.example.com" >> /etc/hosts
+yum -y update && reboot
 useradd stack
 echo 'r3dh4t1!' | passwd --stdin stack
 echo "stack ALL=(root) NOPASSWD:ALL" | tee -a /etc/sudoers.d/stack
 chmod 0440 /etc/sudoers.d/stack
+
+[KVM]
+
+ssh-copy-id stack@undercloud
+
+
+
+[Undercloud-stack]
+[stack@undercloud ~]$ sudo yum -y install libvirt libguestfs-tools
+
+
+
+
+
 
 [Undercloud-stack]
 mkdir ~/images
@@ -20,7 +38,7 @@ sudo hostnamectl set-hostname undercloud.example.com
 sudo hostnamectl set-hostname --transient undercloud.example.com
 sudo vi /etc/hosts
     127.0.0.1   undercloud.example.com localhost localhost.localdomain localhost4 localhost4.localdomain4 
-sudo subscription-manager repos --enable=rhel-7-server-rpms --enable=rhel-7-server-extras-rpms --enable=rhel-7-server-rh-common-rpms --enable=rhel-ha-for-rhel-7-server-rpms --enable=rhel-7-server-openstack-11-rpms
+
 sudo yum update -y
 sudo reboot
 [root@kvm ~]# ssh-copy-id stack@undercloud
@@ -218,6 +236,90 @@ secured.
 #############################################################################
 
 
+[KVM Server]
+yum install squid -y
+cp /etc/squid/squid.conf /etc/squid/squid.conf.original
+vi /etc/squid/squid.conf
+
+acl localnet src 10.142.0.0/24  # RFC1918 possible internal network
+acl localnet src 172.16.0.0/24  # RFC1918 possible internal network
+acl localnet src 192.168.122.0/24       # RFC1918 possible internal network
+acl localnet src fc00::/7       # RFC 4193 local private network range
+acl localnet src fe80::/10      # RFC 4291 link-local (directly plugged) machines
+
+acl SSL_ports port 443
+acl Safe_ports port 80          # http
+acl Safe_ports port 21          # ftp
+acl Safe_ports port 443         # https
+acl Safe_ports port 70          # gopher
+acl Safe_ports port 210         # wais
+acl Safe_ports port 1025-65535  # unregistered ports
+acl Safe_ports port 280         # httrp-mgmt
+acl Safe_ports port 488         # gss-http
+acl Safe_ports port 591         # filemaker
+acl Safe_ports port 777         # multiling http
+acl Safe_ports port 13000               # multiling http
+acl Safe_ports port 13004               # multiling http
+acl Safe_ports port 13385               # multiling http
+acl Safe_ports port 13989               # multiling http
+acl Safe_ports port 13808               # multiling http
+acl Safe_ports port 9000        # multiling http
+acl CONNECT method CONNECT
+
+systemctl start squid
+netstat -tnl | grep 3128
+chmod 700 /home/stack/.ssh/authorized_keys
+
+
+
+[Cliente Remoto]
+ssh -f -L 3128:127.0.0.1:3128 -N root@35.229.98.205
+configurar navegador con proxy p. 3128.
+acceder a la ip pública.
+
+[stack undercloud]
+
+[stack@undercloud ~]$ ls -l ~
+total 24
+drwxrwxr-x. 2 stack stack     6 mar  7 14:21 images
+-rw-------. 1 stack stack   854 mar  7 15:26 stackrc
+drwxrwxr-x. 2 stack stack     6 mar  7 14:21 templates
+-rw-r--r--. 1 stack stack 12669 mar  7 15:17 undercloud.conf
+-rw-rw-r--. 1 stack stack  1894 mar  7 15:18 undercloud-passwords.conf
+
+
+
+[stack@undercloud ~]$ cat ~/stackrc
+# Clear any old environment that may conflict.
+for key in $( set | awk '{FS="="}  /^OS_/ {print $1}' ); do unset $key ; done
+NOVA_VERSION=1.1
+export NOVA_VERSION
+OS_PASSWORD=$(sudo hiera admin_password)
+export OS_PASSWORD
+OS_AUTH_TYPE=password
+export OS_AUTH_TYPE
+OS_AUTH_URL=https://172.16.0.10:13000/v2.0
+PYTHONWARNINGS="ignore:Certificate has no, ignore:A true SSLContext object is not available"
+export OS_AUTH_URL
+export PYTHONWARNINGS
+OS_USERNAME=admin
+OS_TENANT_NAME=admin
+COMPUTE_API_VERSION=1.1
+# 1.29 is the latest API version in Ironic Ocata supported by ironicclient
+IRONIC_API_VERSION=1.29
+OS_BAREMETAL_API_VERSION=$IRONIC_API_VERSION
+OS_NO_CACHE=True
+OS_CLOUDNAME=undercloud
+export OS_USERNAME
+export OS_TENANT_NAME
+export COMPUTE_API_VERSION
+export IRONIC_API_VERSION
+export OS_BAREMETAL_API_VERSION
+export OS_NO_CACHE
+export OS_CLOUDNAME
+
+
+
 
 [stack@undercloud ~]$ ls -la /usr/share/instack-undercloud/puppet-stack-config
 
@@ -305,15 +407,251 @@ undercloud_cinder_password=4bf7b2eeba3229df0dcd3138d4cb4a28ea9a6d88
  
  
  python -m json.tool /etc/os-net-config/config.json
+ {
+    "network_config": [
+        {
+            "addresses": [
+                {
+                    "ip_netmask": "172.16.0.1/24"
+                }
+            ],
+            "members": [
+                {
+                    "dns_servers": [
+                        "8.8.8.8"
+                    ],
+                    "mtu": 1500,
+                    "name": "eth0",
+                    "primary": "true",
+                    "type": "interface"
+                }
+            ],
+            "mtu": 1500,
+            "name": "br-ctlplane",
+            "ovs_extra": [
+                "br-set-external-id br-ctlplane bridge-id br-ctlplane"
+            ],
+            "type": "ovs_bridge"
+        }
+    ]
+}
+
+ 
+ 
+ 
+ 
  sudo ovs-vsctl show
+ 17ca6450-8389-43ae-a143-f2cb9fa89d60
+    Manager "ptcp:6640:127.0.0.1"
+        is_connected: true
+    Bridge br-int
+        Controller "tcp:127.0.0.1:6633"
+            is_connected: true
+        fail_mode: secure
+        Port br-int
+            Interface br-int
+                type: internal
+        Port int-br-ctlplane
+            Interface int-br-ctlplane
+                type: patch
+                options: {peer=phy-br-ctlplane}
+        Port "tap4eb8989e-af"
+            tag: 1
+            Interface "tap4eb8989e-af"
+                type: internal
+    Bridge br-ctlplane
+        Controller "tcp:127.0.0.1:6633"
+            is_connected: true
+        fail_mode: secure
+        Port "eth0"
+            Interface "eth0"
+        Port br-ctlplane
+            Interface br-ctlplane
+                type: internal
+        Port phy-br-ctlplane
+            Interface phy-br-ctlplane
+                type: patch
+                options: {peer=int-br-ctlplane}
+    ovs_version: "2.6.1"
+
+ 
+ 
+ 
  cat /etc/sysconfig/network-scripts/ifcfg-br-ctlplane
+ # This file is autogenerated by os-net-config
+DEVICE=br-ctlplane
+ONBOOT=yes
+HOTPLUG=no
+NM_CONTROLLED=no
+PEERDNS=no
+DEVICETYPE=ovs
+TYPE=OVSBridge
+MTU=1500
+BOOTPROTO=static
+IPADDR=172.16.0.1
+NETMASK=255.255.255.0
+OVS_EXTRA="set bridge br-ctlplane other-config:hwaddr=52:54:00:3f:42:08 -- br-set-external-id br-ctlplane bridge-id br-ctlplane -- set bridge br-ctlplane fail_mode=standalone"
+
+ 
+ 
+ 
+ 
  ip addr show br-ctlplane
- curl -s http://172.16.0.1:9696 | python -m json.tool
- grep ironic::inspector /usr/share/instack-undercloud/puppet-stack-config/puppet-stack-config.yaml.template
- cat /etc/ironic-inspector/dnsmasq.conf
+5: br-ctlplane: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UNKNOWN qlen 1000
+    link/ether 52:54:00:3f:42:08 brd ff:ff:ff:ff:ff:ff
+    inet 172.16.0.1/24 brd 172.16.0.255 scope global br-ctlplane
+       valid_lft forever preferred_lft forever
+    inet 172.16.0.11/32 scope global br-ctlplane
+       valid_lft forever preferred_lft forever
+    inet 172.16.0.10/32 scope global br-ctlplane
+       valid_lft forever preferred_lft forever
+    inet6 fe80::5054:ff:fe3f:4208/64 scope link 
+       valid_lft forever preferred_lft forever
+
+
+
+
+
+
+
+
+
+
+curl -s http://172.16.0.1:9696 | python -m json.tool
+{
+    "versions": [
+        {
+            "id": "v2.0",
+            "links": [
+                {
+                    "href": "http://172.16.0.1:9696/v2.0/",
+                    "rel": "self"
+                }
+            ],
+            "status": "CURRENT"
+        }
+    ]
+}
+
+
+
+
+grep ironic::inspector /usr/share/instack-undercloud/puppet-stack-config/puppet-stack-config.yaml.template
+ironic::inspector::listen_address: {{LOCAL_IP}}
+ironic::inspector::debug: "%{hiera('debug')}"
+ironic::inspector::pxe_transfer_protocol: 'http'
+ironic::inspector::enable_uefi: {{INSPECTION_ENABLE_UEFI}}
+ironic::inspector::authtoken::auth_uri: "%{hiera('keystone_auth_uri')}"
+ironic::inspector::authtoken::auth_url: "%{hiera('keystone_identity_uri')}"
+ironic::inspector::authtoken::username: 'ironic'
+ironic::inspector::authtoken::password: "%{hiera('ironic::api::authtoken::password')}"
+ironic::inspector::authtoken::project_name: 'service'
+ironic::inspector::db::database_connection: mysql+pymysql://ironic-inspector:{{UNDERCLOUD_IRONIC_PASSWORD}}@{{LOCAL_IP}}/ironic-inspector
+ironic::inspector::keep_ports: 'added'
+ironic::inspector::ironic_username: 'ironic'
+ironic::inspector::ironic_password: "%{hiera('ironic::api::authtoken::password')}"
+ironic::inspector::ironic_tenant_name: 'service'
+ironic::inspector::ironic_auth_url: "%{hiera('keystone_auth_uri_v2')}"
+ironic::inspector::ironic_max_retries: 6
+ironic::inspector::ironic_retry_interval: 10
+ironic::inspector::store_data: 'swift'
+ironic::inspector::swift_username: 'ironic'
+ironic::inspector::swift_password: "%{hiera('ironic::api::authtoken::password')}"
+ironic::inspector::swift_tenant_name: 'service'
+ironic::inspector::swift_auth_url: "%{hiera('keystone_auth_uri_v2')}"
+ironic::inspector::dnsmasq_local_ip: {{LOCAL_IP}}
+ironic::inspector::dnsmasq_ip_range: {{INSPECTION_IPRANGE}}
+ironic::inspector::dnsmasq_interface: {{INSPECTION_INTERFACE}}
+ironic::inspector::ramdisk_collectors: {{INSPECTION_COLLECTORS}}
+ironic::inspector::additional_processing_hooks: 'extra_hardware,lldp_basic,local_link_connection'
+ironic::inspector::ramdisk_kernel_args: {{INSPECTION_KERNEL_ARGS}}
+ironic::inspector::ipxe_timeout: 60
+ironic::inspector::node_not_found_hook: {{INSPECTION_NODE_NOT_FOUND_HOOK}}
+ironic::inspector::discovery_default_driver: {{DISCOVERY_DEFAULT_DRIVER}}
+ironic::inspector::http_port: "%{hiera('ironic_ipxe_port')}"
+
+
+
+
+
+cat /etc/ironic-inspector/dnsmasq.conf
+port=0
+interface=br-ctlplane
+bind-interfaces
+dhcp-range=172.16.0.150,172.16.0.180,29
+dhcp-sequential-ip
+dhcp-match=ipxe,175
+dhcp-match=set:efi,option:client-arch,7
+dhcp-match=set:efi,option:client-arch,9
+# Client is already running iPXE; move to next stage of chainloading
+dhcp-boot=tag:ipxe,http://172.16.0.1:8088/inspector.ipxe
+# Client is PXE booting over EFI without iPXE ROM; send EFI version of iPXE chainloader
+dhcp-boot=tag:efi,tag:!ipxe,ipxe.efi
+# Client is running PXE over BIOS; send BIOS version of iPXE chainloader
+dhcp-boot=undionly.kpxe,localhost.localdomain,172.16.0.1
+
+
+[stack@undercloud ~]$ systemctl status openstack-ironic-inspector-dnsmasq.service
+● openstack-ironic-inspector-dnsmasq.service - PXE boot dnsmasq service for Ironic Inspector
+   Loaded: loaded (/usr/lib/systemd/system/openstack-ironic-inspector-dnsmasq.service; enabled; vendor preset: disabled)
+   Active: active (running) since mié 2018-03-07 14:50:27 EST; 4h 39min ago
+ Main PID: 9775 (dnsmasq)
+   CGroup: /system.slice/openstack-ironic-inspector-dnsmasq.service
+           └─9775 /sbin/dnsmasq --conf-file=/etc/ironic-inspector/dnsmasq.conf
+
+[stack@undercloud ~]$ sudo netstat -tunpl | grep dnsmasq
+udp        0      0 0.0.0.0:67              0.0.0.0:*                           9775/dnsmasq
+ 
+[stack@undercloud ~]$ cat /etc/httpd/conf.d/10-ipxe_vhost.conf
+# ************************************
+# Vhost template in module puppetlabs-apache
+# Managed by Puppet
+# ************************************
+
+<VirtualHost *:8088>
+  ServerName ipxe_vhost
+
+  ## Vhost docroot
+  DocumentRoot "/httpboot"
+
+  ## Directories, there should at least be a declaration for /httpboot
+
+  <Directory "/httpboot">
+    Options Indexes FollowSymLinks
+    AllowOverride None
+    Require all granted
+  </Directory>
+
+  ## Logging
+  ErrorLog "/var/log/httpd/ipxe_vhost_error.log"
+  ServerSignature Off
+  CustomLog "/var/log/httpd/ipxe_vhost_access.log" combined 
+</VirtualHost>
+Listen 8088[stack@undercloud ~]$ 
+
+
+
+
+
+
+[stack@undercloud ~]$ cat /httpboot/inspector.ipxe
+#!ipxe
+
+:retry_boot
+imgfree
+kernel --timeout 60000 http://172.16.0.1:8088/agent.kernel ipa-inspection-callback-url=http://172.16.0.1:5050/v1/continue ipa-inspection-collectors=default,extra-hardware,numa-topology,logs systemd.journald.forward_to_console=yes BOOTIF=${mac} ipa-debug=1 ipa-inspection-dhcp-all-interfaces=1 ipa-collect-lldp=1 initrd=agent.ramdisk || goto retry_boot
+initrd --timeout 60000 http://172.16.0.1:8088/agent.ramdisk || goto retry_boot
+boot
+
+
+
+
+
+
  
  
- [stack@undercloud ~]$ source ~/stackrc
+ 
+[stack@undercloud ~]$ source ~/stackrc
 [stack@undercloud ~]$ neutron subnet-list
 neutron CLI is deprecated and will be removed in the future. Use openstack CLI instead.
 +--------------------------------------+-----------------+----------------------------------+---------------+-------------------------------------------------+
@@ -321,8 +659,13 @@ neutron CLI is deprecated and will be removed in the future. Use openstack CLI i
 +--------------------------------------+-----------------+----------------------------------+---------------+-------------------------------------------------+
 | 28b9a385-84de-4910-8f43-80e5a24fb77b | ctlplane-subnet | b10bdc241d414e0391e8005cd4259980 | 172.16.0.0/24 | {"start": "172.16.0.20", "end": "172.16.0.120"} |
 +--------------------------------------+-----------------+----------------------------------+---------------+-------------------------------------------------+
+
+
 [stack@undercloud ~]$ subnet_id=$(neutron subnet-list | awk '/172.16.0.0/ { print $2 }')
 neutron CLI is deprecated and will be removed in the future. Use openstack CLI instead.
+
+
+
 [stack@undercloud ~]$ neutron subnet-show $subnet_id
 neutron CLI is deprecated and will be removed in the future. Use openstack CLI instead.
 +-------------------+----------------------------------------------------------------+
@@ -357,37 +700,495 @@ neutron CLI is deprecated and will be removed in the future. Use openstack CLI i
 qdhcp-c21fa342-d34f-4104-998c-4ca8701a2d43
 
 
-
 [stack@undercloud ~]$ netns=$(ip netns list | grep qdhcp)
 [stack@undercloud ~]$ sudo ip netns exec $netns netstat -tunpl
 Active Internet connections (only servers)
 Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name    
-tcp        0      0 172.16.0.20:53          0.0.0.0:*               LISTEN      12191/dnsmasq       
-tcp6       0      0 fe80::f816:3eff:fecd:53 :::*                    LISTEN      12191/dnsmasq       
-udp        0      0 172.16.0.20:53          0.0.0.0:*                           12191/dnsmasq       
-udp        0      0 0.0.0.0:67              0.0.0.0:*                           12191/dnsmasq       
-udp6       0      0 fe80::f816:3eff:fecd:53 :::*                                12191/dnsmasq  
+tcp        0      0 172.16.0.20:53          0.0.0.0:*               LISTEN      2622/dnsmasq        
+tcp6       0      0 fe80::f816:3eff:fed7:53 :::*                    LISTEN      2622/dnsmasq        
+udp        0      0 172.16.0.20:53          0.0.0.0:*                           2622/dnsmasq        
+udp        0      0 0.0.0.0:67              0.0.0.0:*                           2622/dnsmasq        
+udp6       0      0 fe80::f816:3eff:fed7:53 :::*                                2622/dnsmasq        
+[stack@undercloud ~]$ ps ax | egrep 'dnsmasq|2622'
+ 2622 ?        S      0:00 dnsmasq --no-hosts --no-resolv --strict-order --except-interface=lo --pid-file=/var/lib/neutron/dhcp/81677339-c11d-42e0-a2fe-028b2da388d8/pid --dhcp-hostsfile=/var/lib/neutron/dhcp/81677339-c11d-42e0-a2fe-028b2da388d8/host --addn-hosts=/var/lib/neutron/dhcp/81677339-c11d-42e0-a2fe-028b2da388d8/addn_hosts --dhcp-optsfile=/var/lib/neutron/dhcp/81677339-c11d-42e0-a2fe-028b2da388d8/opts --dhcp-leasefile=/var/lib/neutron/dhcp/81677339-c11d-42e0-a2fe-028b2da388d8/leases --dhcp-match=set:ipxe,175 --bind-interfaces --interface=tap4eb8989e-af --dhcp-range=set:tag0,172.16.0.0,static,86400s --dhcp-option-force=option:mtu,1500 --dhcp-lease-max=256 --conf-file=/etc/dnsmasq-ironic.conf
+ 9775 ?        S      0:00 /sbin/dnsmasq --conf-file=/etc/ironic-inspector/dnsmasq.conf
+31440 pts/0    R+     0:00 grep -E --color=auto dnsmasq|2622
+ 
+
+[stack@undercloud ~]$ sudo ovs-vsctl list-ifaces br-int
+int-br-ctlplane
+tap4eb8989e-af
  
  
-cd /usr/share/openstack-tripleo-validations/validations
-run-validation undercloud-ram.yaml ~/.ssh/id_rsa
+[stack@undercloud validations]$ openstack action execution run tripleo.validations.list_validations | jq ".result[] | .id"
+"512e"
+"ceilometerdb-size"
+"ceph-health"
+"check-network-gateway"
+"controller-token"
+"controller-ulimits"
+"ctlplane-ip-range"
+"deployment-images"
+"dhcp-introspection"
+"dhcp-provisioning"
+"haproxy"
+"mysql-open-files-limit"
+"no-op-firewall-nova-driver"
+"ntpstat"
+"openstack-endpoints"
+"pacemaker-status"
+"rabbitmq-limits"
+"stonith-exists"
+"undercloud-cpu"
+"undercloud-debug"
+"undercloud-disk-space"
+"undercloud-process-count"
+"undercloud-ram"
+"undercloud-tokenflush"
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ openstack action execution run tripleo.validations.list_groups
+{"result": ["pre-introspection", "post-deployment", "prep", "pre-deployment"]}
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ openstack action execution run
+usage: openstack action execution run [-h] [-f {json,shell,table,value,yaml}]
+                                      [-c COLUMN] [--max-width <integer>]
+                                      [--print-empty] [--noindent]
+                                      [--prefix PREFIX] [-s] [--run-sync]
+                                      [-t TARGET]
+                                      name [input]
+openstack action execution run: error: too few arguments
+[stack@undercloud validations]$ openstack action execution run tripleo.validations.list_validations '{"groups": ["prep"]}' | jq ".result[] | .id"
+"512e"
+"undercloud-cpu"
+"undercloud-disk-space"
+"undercloud-ram"
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ openstack action execution run tripleo.validations.list_validations '{"groups": ["pre-introspection"]}' | jq ".result[] | .id"
+"check-network-gateway"
+"ctlplane-ip-range"
+"dhcp-introspection"
+"undercloud-cpu"
+"undercloud-disk-space"
+"undercloud-ram"
+"undercloud-tokenflush"
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ openstack action execution run tripleo.validations.list_validations '{"groups": ["pre-deployment"]}' | jq ".result[] | .id"
+"512e"
+"ceilometerdb-size"
+"deployment-images"
+"dhcp-provisioning"
+"undercloud-debug"
+"undercloud-process-count"
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ openstack action execution run tripleo.validations.list_validations '{"groups": ["post-deployment"]}' | jq ".result[] | .id"
 
-[stack@undercloud validations]$ run-validation undercloud-disk-space.yaml ~/.ssh/id_rsa
-[DEPRECATION WARNING]: DEFAULT_SUDO_FLAGS option, In favor of become which is a generic framework . This feature will be removed in version 2.8. Deprecation warnings can be disabled by 
-setting deprecation_warnings=False in ansible.cfg.
- [WARNING]: when statements should not include jinja2 templating delimiters such as {{ }} or {% %}. Found: '/var' == '{{ item.mount }}'
+"ceph-health"
+"controller-token"
+"controller-ulimits"
+"haproxy"
+"mysql-open-files-limit"
+"no-op-firewall-nova-driver"
+"ntpstat"
+"openstack-endpoints"
+"pacemaker-status"
+"rabbitmq-limits"
+"stonith-exists"
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ 
+[stack@undercloud validations]$ openstack action execution run tripleo.validations.list_validations | python -m json.tool
+{
+    "result": [
+        {
+            "description": "Detect whether the undercloud disks use Advanced Format. If they do, the overcloud images may fail to upload to Glance.\n",
+            "groups": [
+                "prep",
+                "pre-deployment"
+            ],
+            "id": "512e",
+            "metadata": {},
+            "name": "Advanced Format 512e Support"
+        },
+        {
+            "description": "The undercloud's ceilometer database can grow to a substantial size if metering_time_to_live and event_time_to_live is set to a negative value (infinite limit). This validation checks each setting and fails if variables are set to a negative value or if they have no custom setting (their value is -1 by default).\n",
+            "groups": [
+                "pre-deployment"
+            ],
+            "id": "ceilometerdb-size",
+            "metadata": {},
+            "name": "Ceilometer Database Size Check"
+        },
+        {
+            "description": "Uses `ceph health` to check if cluster is in HEALTH_WARN state and prints a debug message.\n",
+            "groups": [
+                "post-deployment"
+            ],
+            "id": "ceph-health",
+            "metadata": {},
+            "name": "Check the status of the ceph cluster"
+        },
+        {
+            "description": "If `network_gateway` in `undercloud.conf` is different from `local_ip`, verify that the gateway exists and is reachable.\n",
+            "groups": [
+                "pre-introspection"
+            ],
+            "id": "check-network-gateway",
+            "metadata": {},
+            "name": "Check network_gateway on the provisioning network"
+        },
+        {
+            "description": "This validation checks that keystone admin token is disabled on both undercloud and overcloud controller after deployment.\n",
+            "groups": [
+                "post-deployment"
+            ],
+            "id": "controller-token",
+            "metadata": {
+                "Name": "Verify that keystone admin token is disabled."
+            },
+            "name": "Unnamed"
+        },
+        {
+            "description": "This will check the ulimits of each controller.\n",
+            "groups": [
+                "post-deployment"
+            ],
+            "id": "controller-ulimits",
+            "metadata": {},
+            "name": "Check controller ulimits"
+        },
+        {
+            "description": "Verify that the number of IP addresses defined in `dhcp_start` and `dhcp_end` fields in `undercloud.conf` is not too low.\n",
+            "groups": [
+                "pre-introspection"
+            ],
+            "id": "ctlplane-ip-range",
+            "metadata": {},
+            "name": "Check the number of IP addresses available to overcloud nodes"
+        },
+        {
+            "description": "This validation checks that images bm-deploy-kernel and bm-deploy-ramdisk exist before deploying the overcloud.\n",
+            "groups": [
+                "pre-deployment"
+            ],
+            "id": "deployment-images",
+            "metadata": {},
+            "name": "Verify existence of deployment images."
+        },
+        {
+            "description": "An unexpected DHCP server on the network used for node introspection can cause some nodes to not be inspected.\nThis validations checks for the DHCP responses on the interface specified in ironic-inspector.conf.\n",
+            "groups": [
+                "pre-introspection"
+            ],
+            "id": "dhcp-introspection",
+            "metadata": {},
+            "name": "DHCP on the Introspection Network"
+        },
+        {
+            "description": "An unexpected DHCP server on the provisioning network can cause problems with deploying the Ironic nodes.\nThis validation checks for DHCP responses on the undercloud's provisioning interface (eth1 by default) and fails if there are any.\n",
+            "groups": [
+                "pre-deployment"
+            ],
+            "id": "dhcp-provisioning",
+            "metadata": {},
+            "name": "DHCP on the Provisioning Network"
+        },
+        {
+            "description": "Verify the HAProxy configuration has recommended values.",
+            "groups": [
+                "post-deployment"
+            ],
+            "id": "haproxy",
+            "metadata": {},
+            "name": "HAProxy configuration"
+        },
+        {
+            "description": "Verify the `open-files-limit` configuration is high enough\nhttps://access.redhat.com/solutions/1598733\n",
+            "groups": [
+                "post-deployment"
+            ],
+            "id": "mysql-open-files-limit",
+            "metadata": {},
+            "name": "MySQL Open Files Limit"
+        },
+        {
+            "description": "When using Neutron, the `firewall_driver` option in Nova must be set to `NoopFirewallDriver`.\n",
+            "groups": [
+                "post-deployment"
+            ],
+            "id": "no-op-firewall-nova-driver",
+            "metadata": {},
+            "name": "Verify NoOpFirewallDriver is set in Nova"
+        },
+        {
+            "description": "Each overcloud node should have their clocks synchronised.\nThe deployment should configure and run ntpd. This validation verifies that it is indeed running and connected to an NPT server on all nodes.\n",
+            "groups": [
+                "post-deployment"
+            ],
+            "id": "ntpstat",
+            "metadata": {},
+            "name": "Verify all deployed nodes have their clock synchronised."
+        },
+        {
+            "description": "This validation gets the PublicVip address from the deployment and tries to access Horizon and get a Keystone token.\n",
+            "groups": [
+                "post-deployment"
+            ],
+            "id": "openstack-endpoints",
+            "metadata": {},
+            "name": "Check connectivity to various OpenStack services"
+        },
+        {
+            "description": "This runs `pcs status` and checks for any failed actions.\nA failed status post-deployment indicates something is not configured correctly. This should also be run before upgrade as the process will likely fail with a cluster that's not completely healthy.\n",
+            "groups": [
+                "post-deployment"
+            ],
+            "id": "pacemaker-status",
+            "metadata": {},
+            "name": "Check the status of the pacemaker cluster"
+        },
+        {
+            "description": "Make sure the rabbitmq file descriptor limits are set to reasonable values.\n",
+            "groups": [
+                "post-deployment"
+            ],
+            "id": "rabbitmq-limits",
+            "metadata": {},
+            "name": "Rabbitmq limits"
+        },
+        {
+            "description": "Verify that stonith devices are configured for your OpenStack Platform HA cluster. We don't configure stonith device with TripleO Installer. Because the hardware configuration may be differ in each environment and requires different fence agents. How to configure fencing please read https://access.redhat.com/documentation/en/red-hat-openstack-platform/8/paged/director-installation-and-usage/86-fencing-the-controller-nodes\n",
+            "groups": [
+                "post-deployment"
+            ],
+            "id": "stonith-exists",
+            "metadata": {},
+            "name": "stonith-exists"
+        },
+        {
+            "description": "Make sure that the undercloud has enough CPU cores.\nhttps://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux_OpenStack_Platform/7/html/Director_Installation_and_Usage/sect-Undercloud_Requirements.html\n",
+            "groups": [
+                "prep",
+                "pre-introspection"
+            ],
+            "id": "undercloud-cpu",
+            "metadata": {},
+            "name": "Verify undercloud fits the CPU core requirements"
+        },
+        {
+            "description": "The undercloud's openstack services should _not_ have debug enabled. This will check if debug is enabled on undercloud services. If debug is enabled, the root filesystem can fill up quickly, and is not a good thing.\n",
+            "groups": [
+                "pre-deployment"
+            ],
+            "id": "undercloud-debug",
+            "metadata": {},
+            "name": "Undercloud Services Debug Check"
+        },
+        {
+            "description": "Make sure that the root partition on the undercloud node is large enough.\nWe first check for an explicit `/var` mount point since that's where we store logs and images and if it doesn't exist, we fall back to `/`.\nhttp://tripleo.org/environments/environments.html#id5\n",
+            "groups": [
+                "prep",
+                "pre-introspection"
+            ],
+            "id": "undercloud-disk-space",
+            "metadata": {},
+            "name": "Verify undercloud fits the disk space requirements"
+        },
+        {
+            "description": "The default settings for OpenStack is to run one process (heat-engine, keystone, etc.) per CPU core. On a machine with a lot of cores this is both unnecessary and can consume a significant amount of RAM, leading to crashes due to OOMKiller.\n",
+            "groups": [
+                "pre-deployment"
+            ],
+            "id": "undercloud-process-count",
+            "metadata": {},
+            "name": "Check the number of OpenStack processes on undercloud"
+        },
+        {
+            "description": "Verify that the undercloud has enough RAM.\nhttps://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux_OpenStack_Platform/7/html/Director_Installation_and_Usage/sect-Undercloud_Requirements.html\n",
+            "groups": [
+                "prep",
+                "pre-introspection"
+            ],
+            "id": "undercloud-ram",
+            "metadata": {},
+            "name": "Verify the undercloud fits the RAM requirements"
+        },
+        {
+            "description": "Without a token_flush crontab enabled for the keystone user, the keystone database can grow very large.  This validation checks that the keystone token_flush crontab has been set up.\n",
+            "groups": [
+                "pre-introspection"
+            ],
+            "id": "undercloud-tokenflush",
+            "metadata": {},
+            "name": "Verify token_flush is enabled in keystone users crontab."
+        }
+    ]
+}
 
- [WARNING]: when statements should not include jinja2 templating delimiters such as {{ }} or {% %}. Found: {{ not previous.changed }} and '/' == '{{ item.mount }}'
 
- [WARNING]: when statements should not include jinja2 templating delimiters such as {{ }} or {% %}. Found: {{ min_undercloud_disk_gb|int * const_bytes_in_gb|int }} >= {{
-item.size_available|int }}
+$ cd /usr/share/openstack-tripleo-validations/validations/
+$ ls | less
 
-Task 'Verify root disk space' failed:
+512e.yaml
+callback_plugins
+ceilometerdb-size.yaml
+ceph-health.yaml
+check-network-gateway.yaml
+controller-token.yaml
+controller-ulimits.yaml
+ctlplane-ip-range.yaml
+deployment-images.yaml
+dhcp-introspection.yaml
+dhcp-provisioning.yaml
+files
+haproxy.yaml
+library
+mysql-open-files-limit.yaml
+no-op-firewall-nova-driver.yaml
+ntpstat.yaml
+openstack-endpoints.yaml
+pacemaker-status.yaml
+rabbitmq-limits.yaml
+stonith-exists.yaml
+undercloud-cpu.yaml
+undercloud-debug.yaml
+undercloud-disk-space.yaml
+undercloud-process-count.yaml
+undercloud-ram.yaml
+undercloud-tokenflush.yaml
+
+
+
+[stack@undercloud validations]$ cat undercloud-ram.yaml
+---
+- hosts: undercloud
+  vars:
+    metadata:
+      name: Verify the undercloud fits the RAM requirements
+      description: >
+        Verify that the undercloud has enough RAM.
+
+        https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux_OpenStack_Platform/7/html/Director_Installation_and_Usage/sect-Undercloud_Requirements.html
+      groups:
+        - prep
+        - pre-introspection
+    min_undercloud_ram_gb: 16
+  tasks:
+  - name: Verify the RAM requirements
+    fail: msg="The RAM on the undercloud node is {{ ansible_memtotal_mb }} MB, the minimal recommended value is {{ min_undercloud_ram_gb|int * 1024 }} MB."
+    # NOTE(shadower): converting GB to MB
+    failed_when: "({{ ansible_memtotal_mb }}) < {{ min_undercloud_ram_gb|int * 1024 }}"
+
+
+
+
+[stack@undercloud validations]$ run-validation undercloud-ram.yaml  ~/.ssh/id_rsa
+[DEPRECATION WARNING]: DEFAULT_SUDO_FLAGS option, In favor of become which is a generic framework . This feature will be removed in version 2.8. Deprecation warnings can be disabled by setting 
+deprecation_warnings=False in ansible.cfg.
+ [WARNING]: when statements should not include jinja2 templating delimiters such as {{ }} or {% %}. Found: ({{ ansible_memtotal_mb }}) < {{ min_undercloud_ram_gb|int * 1024 }}
+
+Task 'Verify the RAM requirements' failed:
 Host: localhost
-Message: The available space on the root partition is 4.4 GB, but it should be at least 60 GB.
+Message: The RAM on the undercloud node is 15886 MB, the minimal recommended value is 16384 MB.
 
 Failure! The validation failed for all hosts:
 * localhost
+[stack@undercloud validations]$ 
+
+ [stack@undercloud validations]$ sudo yum -y install crudini
+ 
+ [stack@undercloud validations]$ for i in nova neutron heat ironic; do sudo crudini --get /etc/$i/$i.conf DEFAULT debug; done
+True
+True
+True
+True
+
+ for i in nova neutron heat ironic; do sudo crudini --set /etc/$i/$i.conf DEFAULT debug False; done
+ 
+ 
+ for i in nova neutron heat ironic; do sudo crudini --get /etc/$i/$i.conf DEFAULT debug; done
+
+[stack@undercloud validations]$ sudo subscription-manager repos --enable=rhel-7-server-openstack-11-devtools-rpms 
+Repository 'rhel-7-server-openstack-11-devtools-rpms' is enabled for this system.
+
+
+[stack@undercloud validations]$ for i in nova neutron heat ironic; do sudo openstack-service restart $i; openstack-service status $i; done
+MainPID=4898 Id=openstack-nova-api.service ActiveState=active
+MainPID=4983 Id=openstack-nova-cert.service ActiveState=active
+MainPID=4924 Id=openstack-nova-compute.service ActiveState=active
+MainPID=4896 Id=openstack-nova-conductor.service ActiveState=active
+MainPID=4935 Id=openstack-nova-scheduler.service ActiveState=active
+MainPID=5090 Id=neutron-dhcp-agent.service ActiveState=active
+MainPID=5050 Id=neutron-openvswitch-agent.service ActiveState=active
+MainPID=5130 Id=neutron-server.service ActiveState=active
+MainPID=5190 Id=openstack-heat-api-cfn.service ActiveState=active
+MainPID=5195 Id=openstack-heat-api.service ActiveState=active
+MainPID=5191 Id=openstack-heat-engine.service ActiveState=active
+MainPID=5293 Id=openstack-ironic-api.service ActiveState=active
+MainPID=5363 Id=openstack-ironic-conductor.service ActiveState=active
+MainPID=5287 Id=openstack-ironic-inspector-dnsmasq.service ActiveState=active
+MainPID=5284 Id=openstack-ironic-inspector.service ActiveState=active
+
+ 
+ 
+ [stack@undercloud validations]$ cd /usr/share/openstack-tripleo-validations/validations
+[stack@undercloud validations]$ run-validation undercloud-debug.yaml ~/.ssh/id_rsa
+[DEPRECATION WARNING]: DEFAULT_SUDO_FLAGS option, In favor of become which is a generic framework . This feature will be removed in version 2.8. Deprecation warnings can be disabled by setting 
+deprecation_warnings=False in ansible.cfg.
+Success! The validation passed for all hosts:
+* localhost
+
+
+ 
+ 
 
 
 
@@ -483,6 +1284,17 @@ tmpfs            1.6G      0  1.6G   0% /run/user/0
  
  
  
+
+============================================================================= |
+
+[stack@undercloud validations]$ sudo yum install rhosp-director-images -y
+
+[stack@undercloud validations]$ mkdir -p ~/images/
+[stack@undercloud validations]$ cd ~/images/
+[stack@undercloud images]$ tar xvf /usr/share/rhosp-director-images/ironic-python-agent.tar -C .
+ironic-python-agent.initramfs
+ironic-python-agent.kernel
+
 
 
 
