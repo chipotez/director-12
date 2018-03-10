@@ -1,4 +1,4 @@
-[Undercloud-root]
+[KVM-Server / undercloud]
 
 hostnamectl set-hostname undercloud.example.com
 systemctl restart network.service
@@ -40,19 +40,6 @@ sudo hostnamectl set-hostname --transient undercloud.example.com
 sudo vi /etc/hosts
     127.0.0.1   undercloud.example.com localhost localhost.localdomain localhost4 localhost4.localdomain4 
 
-sudo yum update -y
-sudo reboot
-[root@kvm ~]# ssh-copy-id stack@undercloud
-/usr/bin/ssh-copy-id: INFO: Source of key(s) to be installed: "/root/.ssh/id_ed25519.pub"
-/usr/bin/ssh-copy-id: INFO: attempting to log in with the new key(s), to filter out any that are already installed
-/usr/bin/ssh-copy-id: INFO: 1 key(s) remain to be installed -- if you are prompted now it is to install the new keys
-stack@undercloud's password: 
-
-Number of key(s) added: 1
-
-Now try logging into the machine, with:   "ssh 'stack@undercloud'"
-and check to make sure that only the key(s) you wanted were added.
-
 [root@kvm ~]# ssh stack@undercloud
 Last login: Sun Nov 26 14:34:42 2017
 
@@ -68,159 +55,24 @@ undercloud_admin_host = 172.16.0.11
 undercloud_nameservers = 8.8.8.8
 undercloud_ntp_servers = 0.rhel.pool.ntp.org
 generate_service_certificate = true
-certificsudo dnf install codeate_generation_ca = local
+certificate_generation_ca = local
 local_interface = eth0
 network_cidr = 172.16.0.0/24
 masquerade_network = 172.16.0.0/24
 dhcp_start = 172.16.0.20
 dhcp_end = 172.16.0.120
-#inspection_interface = br-ctlplane
 inspection_iprange = 172.16.0.150,172.16.0.180
-#inspection_enable_uefi = true
-#discovery_default_driver = pxe_ipmitool
 undercloud_debug = true
 enable_telemetry = false
 enable_ui = true
 enable_validations = true
-#enable_legacy_ceilometer_api = true
-#enable_novajoin = false
-#ipxe_enabled = true
 enabled_drivers = pxe_ipmitool,pxe_ssh,pxe_drac,pxe_ilo,fake_pxe
 
-#local_ip = 172.16.0.1/24
-#undercloud_public_vip = 172.16.0.10
-#undercloud_admin_vip = 172.16.0.11
-#local_interface = eth0
-#masquerade_network = 172.16.0.0/24
-#dhcp_start = 172.16.0.20
-#dhcp_end = 172.16.0.120
-#network_cidr = 172.16.0.0/24
-#network_gateway = 172.16.0.1
-#discovery_iprange = 172.16.0.150,172.16.0.180
-#enable_telemetry = false
 
 [auth]
 
-#
-# From instack-undercloud
-#
 
-# Password used for MySQL databases. If left unset, one will be
-# automatically generated. (string value)
-#undercloud_db_password = <None>
-
-# Keystone admin token. If left unset, one will be automatically
-# generated. (string value)
-#undercloud_admin_token = <None>
-
-# Keystone admin password. If left unset, one will be automatically
-# generated. (string value)
 undercloud_admin_password = redhat2017
-
-# Glance service password. If left unset, one will be automatically
-# generated. (string value)
-#undercloud_glance_password = <None>
-
-# Heat db encryption key(must be 16, 24, or 32 characters. If left
-# unset, one will be automatically generated. (string value)
-#undercloud_heat_encryption_key = <None>
-
-# Heat service password. If left unset, one will be automatically
-# generated. (string value)
-#undercloud_heat_password = <None>
-
-# Heat cfn service password. If left unset, one will be automatically
-# generated. (string value)
-#undercloud_heat_cfn_password = <None>
-
-# Neutron service password. If left unset, one will be automatically
-# generated. (string value)
-#undercloud_neutron_password = <None>
-
-# Nova service password. If left unset, one will be automatically
-# generated. (string value)
-#undercloud_nova_password = <None>
-
-# Ironic service password. If left unset, one will be automatically
-# generated. (string value)
-#undercloud_ironic_password = <None>
-
-# Aodh service password. If left unset, one will be automatically
-# generated. (string value)
-#undercloud_aodh_password = <None>
-
-# Gnocchi service password. If left unset, one will be automatically
-# generated. (string value)
-#undercloud_gnocchi_password = <None>
-
-# Ceilometer service password. If left unset, one will be
-# automatically generated. (string value)
-#undercloud_ceilometer_password = <None>
-
-# Panko service password. If left unset, one will be automatically
-# generated. (string value)
-#undercloud_panko_password = <None>
-
-# Ceilometer metering secret. If left unset, one will be automatically
-# generated. (string value)
-#undercloud_ceilometer_metering_secret = <None>
-
-# Ceilometer snmpd read-only user. If this value is changed from the
-# default, the new value must be passed in the overcloud environment
-# as the parameter SnmpdReadonlyUserName. This value must be between 1
-# and 32 characters long. (string value)
-#undercloud_ceilometer_snmpd_user = ro_snmp_user
-
-# Ceilometer snmpd password. If left unset, one will be automatically
-# generated. (string value)
-#undercloud_ceilometer_snmpd_password = <None>
-
-# Swift service password. If left unset, one will be automatically
-# generated. (string value)
-#undercloud_swift_password = <None>
-
-# Mistral service password. If left unset, one will be automatically
-# generated. (string value)
-#undercloud_mistral_password = <None>
-
-# Rabbitmq cookie. If left unset, one will be automatically generated.
-# (string value)
-#undercloud_rabbit_cookie = <None>
-
-# Rabbitmq password. If left unset, one will be automatically
-# generated. (string value)
-#undercloud_rabbit_password = <None>
-
-# Rabbitmq username. If left unset, one will be automatically
-# generated. (string value)
-#undercloud_rabbit_username = <None>
-
-# Heat stack domain admin password. If left unset, one will be
-# automatically generated. (string value)
-#undercloud_heat_stack_domain_admin_password = <None>
-
-# Swift hash suffix. If left unset, one will be automatically
-# generated. (string value)
-#undercloud_swift_hash_suffix = <None>
-
-# HAProxy stats password. If left unset, one will be automatically
-# generated. (string value)
-#undercloud_haproxy_stats_password = <None>
-
-# Zaqar password. If left unset, one will be automatically generated.
-# (string value)
-#undercloud_zaqar_password = <None>
-
-# Horizon secret key. If left unset, one will be automatically
-# generated. (string value)
-#undercloud_horizon_secret_key = <None>
-
-# Cinder service password. If left unset, one will be automatically
-# generated. (string value)
-#undercloud_cinder_password = <None>
-
-
-
 
 openstack undercloud install
 #############################################################################
