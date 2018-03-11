@@ -230,7 +230,12 @@ This command is deprecated. Instead, use 'openstack baremetal node show'.
 | a39ec4af-7326-407f-b0ba-c1e7ec10d921 | overcloud-networker | available       | networker       |                   |
 +--------------------------------------+---------------------+-----------------+-----------------+-------------------+
 
-
+[stack@undercloud hardware-specs]$ sudo yum install openstack-tripleo-heat-templates-compat -y
+Complementos cargados:search-disabled-repos
+Resolviendo dependencias
+--> Ejecutando prueba de transacción
+---> Paquete openstack-tripleo-heat-templates-compat.noarch 0:5.3.8-1.el7ost debe ser instalado
+--> Resolución de dependencias finalizada
 
 
 
@@ -263,8 +268,13 @@ sys 0m0.558s
 
 
 
+3.2. Deploying Nodes/Instances
 
-
+No mostrar
+####################################################
+####################################################
+####################################################
+####################################################
 [stack@undercloud hardware-specs]$ ls
 overcloud-ctrl01  overcloud-ctrl02  overcloud-ctrl03  overcloudrc  overcloudrc.v3  tempest-deployer-input.conf
 [stack@undercloud hardware-specs]$ source overcloudrc
@@ -405,6 +415,14 @@ echo Press any key to reboot...
 prompt --timeout 180
 reboot[stack@undercloud hardware-specs]$ cd /httpboot/pxelinux.cfg/
 [stack@undercloud pxelinux.cfg]$ ls
+
+
+####################################################
+####################################################
+####################################################
+####################################################
+Mostrar nuevamente.
+
 [stack@undercloud pxelinux.cfg]$ sudo grep -m 1 "Still waiting for ironic node" /var/log/nova/nova-compute.log
 2017-11-26 21:47:24.093 2908 DEBUG nova.virt.ironic.driver [-] [instance: 1a4031ef-57a2-44fe-9180-08cf877de6d1] Still waiting for ironic node 24faed30-1cfc-462a-b8dc-3b13d3c93994 to become ACTIVE: power_state="power off", target_power_state=None, provision_state="deploying", target_provision_state="active" _log_ironic_polling /usr/lib/python2.7/site-packages/nova/virt/ironic/driver.py:122
 [stack@undercloud pxelinux.cfg]$ openstack server list
@@ -423,6 +441,12 @@ ECDSA key fingerprint is SHA256:w9AgAF5qDIo6rEvl89hXA9fhFMwSZ1ocnm5QWf9YYso.
 ECDSA key fingerprint is MD5:b5:31:bd:81:80:30:75:f4:c7:fb:9a:8a:43:6d:99:ce.
 Are you sure you want to continue connecting (yes/no)? yes
 Warning: Permanently added '172.16.0.33' (ECDSA) to the list of known hosts.
+
+
+##########################################
+##########################################
+##########################################
+##########################################
 [heat-admin@overcloud-controller-2 ~]$ sudo cat /etc/os-collect-config.conf
 [DEFAULT]
 command = os-refresh-config --timeout 14400
@@ -460,6 +484,16 @@ logout
 Connection to 172.16.0.33 closed.
 [stack@undercloud pxelinux.cfg]$ cd -
 /home/stack/hardware-specs
+
+
+
+##########################################
+##########################################
+##########################################
+##########################################
+
+
+
 [stack@undercloud hardware-specs]$ cat ~/overcloudrc
 cat: /home/stack/overcloudrc: No existe el fichero o el directorio
 [stack@undercloud hardware-specs]$ cat overcloudrc
