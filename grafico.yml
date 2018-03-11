@@ -1,35 +1,15 @@
-[root@undercloud ~]# history 
-    1  init 0
-    2  tail -f /var/log/secure 
-    3  yum repolist
-    4  hostnamectl set-hostname undercloud.example.com
-    5  ifco
-    6  ip a s
-    7  ifup eth1
-    8  subscription-manager register
-    9  subscription-manager list -all
-   10  subscription-manager list -all --available
-   11  subscription-manager list --all --available
-   12  subscription-manager attach --pool=8a85f98160e6119c0160e901f57f767f
-   13  sudo subscription-manager repos --disable=* 
-   14  useradd stack
-   15  echo 'r3dh4t1!' | passwd --stdin stack
-   16  echo "stack ALL=(root) NOPASSWD:ALL" | tee -a /etc/sudoers.d/stack
-   17  chmod 0440 /etc/sudoers.d/stack
-   18          sudo subscription-manager repos --enable=rhel-7-server-rpms --enable=rhel-7-server-extras-rpms --enable=rhel-7-server-rh-common-rpms
-   19  yum install @'@Server with GUI'
-   20  yum install @'Server with GUI'
-   21  yum install '@Server with GUI'
-   22  yum groupinstall 'Server with GUI'
-   23  yum install         libguestfs         libguestfs-tools         libvirt-client         libvirt         libvirt-python         qemu-guest-agent         qemu-img         qemu-kvm         virt-install         virt-manager \      
-   24  yum update -y
-   25  reboot 
-   26  history 
+hostnamectl set-hostname undercloud.example.com
 
-
-
-
-
+useradd stack
+echo 'r3dh4t1!' | passwd --stdin stack
+echo "stack ALL=(root) NOPASSWD:ALL" | tee -a /etc/sudoers.d/stack
+chmod 0440 /etc/sudoers.d/stack
+sudo subscription-manager repos --enable=rhel-7-server-rpms --enable=rhel-7-server-extras-rpms --enable=rhel-7-server-rh-common-rpms
+yum install '@Server with GUI'
+yum groupinstall 'Server with GUI'
+yum install libguestfs libguestfs-tools libvirt-client libvirt libvirt-python qemu-guest-agent qemu-img qemu-kvm virt-install virt-manager
+yum update -y
+reboot 
 
 ---
 - name: Configuración de Equipo
@@ -123,11 +103,26 @@ EOF
 
 virsh snapshot-create-as undercloud undercloud-snap-lab0
 
+[root@kvm-hypervisor ~]# cat << EOF > /etc/modprobe.d/kvm_intel.conf
+options kvm-intel nested=1
+options kvm-intel enable_shadow_vmcs=1
+options kvm-intel enable_apicv=1
+options kvm-intel ept=1
+EOF
 
 
+[root@kvm-hypervisor ~]# cat << EOF > /etc/sysctl.d/98-rp-filter.conf
+net.ipv4.conf.default.rp_filter = 0
+net.ipv4.conf.all.rp_filter = 0
+EOF
 
+[root@kvm-hypervisor ~]# vi /etc/default/grub
+GRUB_CMDLINE_LINUX="rd.lvm.lv=vol0/swapVol rd.md=0 rd.dm=0  KEYTABLE=us quiet rd.lvm.lv=vol0/rootVol rhgb rd.luks=0 SYSFONT=latarcyrheb-sun16 LANG=en_US.UTF-8 kvm-intel.nested=1" <-----add kvm-intel
+
+[root@kvm-hypervisor ~]# grub2-mkconfig -o /boot/grub2/grub.cfg
+
+[root@kvm-hypervisor ~]# echo “options kvm-intel nested=1″ | sudo tee /etc/modprobe.d/kvm-intel.conf
         
-        
-
+[root@kvm-hypervisor ~]# reboot.
         
         
