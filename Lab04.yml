@@ -1,0 +1,333 @@
+[undercloud]
+
+[stack@undercloud ~]$ source ~/overcloudrc
+[stack@undercloud ~]$ openstack compute service list
++----+------------------+------------------------------------+----------+---------+-------+----------------------------+
+| ID | Binary           | Host                               | Zone     | Status  | State | Updated At                 |
++----+------------------+------------------------------------+----------+---------+-------+----------------------------+
+| 21 | nova-conductor   | overcloud-controller-1.localdomain | internal | enabled | up    | 2018-03-11T01:53:12.000000 |
+| 45 | nova-compute     | overcloud-compute-1.localdomain    | nova     | enabled | up    | 2018-03-11T01:53:13.000000 |
+| 48 | nova-conductor   | overcloud-controller-2.localdomain | internal | enabled | up    | 2018-03-11T01:53:15.000000 |
+| 60 | nova-scheduler   | overcloud-controller-1.localdomain | internal | enabled | up    | 2018-03-11T01:53:18.000000 |
+| 63 | nova-consoleauth | overcloud-controller-1.localdomain | internal | enabled | up    | 2018-03-11T01:53:18.000000 |
+| 72 | nova-scheduler   | overcloud-controller-2.localdomain | internal | enabled | up    | 2018-03-11T01:53:22.000000 |
+| 75 | nova-consoleauth | overcloud-controller-2.localdomain | internal | enabled | up    | 2018-03-11T01:53:19.000000 |
+| 78 | nova-compute     | overcloud-compute-0.localdomain    | nova     | enabled | up    | 2018-03-11T01:53:17.000000 |
+| 81 | nova-conductor   | overcloud-controller-0.localdomain | internal | enabled | up    | 2018-03-11T01:53:18.000000 |
+| 90 | nova-scheduler   | overcloud-controller-0.localdomain | internal | enabled | up    | 2018-03-11T01:53:15.000000 |
+| 93 | nova-consoleauth | overcloud-controller-0.localdomain | internal | enabled | up    | 2018-03-11T01:53:22.000000 |
++----+------------------+------------------------------------+----------+---------+-------+----------------------------+
+
+
+
+[stack@undercloud ~]$ source ~/stackrc
+[stack@undercloud ~]$ openstack server list
++--------------------------------------+------------------------+--------+----------------------+----------------+
+| ID                                   | Name                   | Status | Networks             | Image Name     |
++--------------------------------------+------------------------+--------+----------------------+----------------+
+| 349e14a0-a4b2-4fb5-8d69-e5ad2c5f5c57 | overcloud-controller-1 | ACTIVE | ctlplane=172.16.0.27 | overcloud-full |
+| 432f0e13-ee4d-4f81-a0e6-7b93e127d396 | overcloud-compute-0    | ACTIVE | ctlplane=172.16.0.22 | overcloud-full |
+| 87ac524f-a947-4581-97c0-263eec8a5640 | overcloud-compute-1    | ACTIVE | ctlplane=172.16.0.30 | overcloud-full |
+| b11bc1cb-8f6d-4412-b8a6-4537eccf02f7 | overcloud-controller-2 | ACTIVE | ctlplane=172.16.0.26 | overcloud-full |
+| 58b08a08-41d1-48c8-92a3-acb7b8ab348c | overcloud-controller-0 | ACTIVE | ctlplane=172.16.0.31 | overcloud-full |
++--------------------------------------+------------------------+--------+----------------------+----------------+
+
+
+
+[stack@undercloud ~]$ openstack compute service list
++----+----------------+------------------------+----------+---------+-------+----------------------------+
+| ID | Binary         | Host                   | Zone     | Status  | State | Updated At                 |
++----+----------------+------------------------+----------+---------+-------+----------------------------+
+|  3 | nova-cert      | undercloud.example.com | internal | enabled | up    | 2018-03-11T01:55:47.000000 |
+|  4 | nova-conductor | undercloud.example.com | internal | enabled | up    | 2018-03-11T01:55:43.000000 |
+|  6 | nova-scheduler | undercloud.example.com | internal | enabled | up    | 2018-03-11T01:55:46.000000 |
+|  7 | nova-compute   | undercloud.example.com | nova     | enabled | up    | 2018-03-11T01:55:42.000000 |
++----+----------------+------------------------+----------+---------+-------+----------------------------+
+
+
+[stack@undercloud ~]$ scp overcloudrc heat-admin@172.16.0.27:~
+overcloudrc                                                                                                                                                                      100%  619   357.4KB/s   00:00    
+
+[stack@undercloud ~]$ scp overcloudrc heat-admin@172.16.0.26:~
+overcloudrc                                                                                                                                                                      100%  619   147.9KB/s   00:00    
+
+[stack@undercloud ~]$ scp overcloudrc heat-admin@172.16.0.31:~
+overcloudrc                                                                                                                                                                      100%  619   109.7KB/s   00:00    
+
+[stack@undercloud ~]$ ssh heat-admin@172.16.0.24
+Last login: Sun Mar 11 02:19:10 2018 from gateway
+
+
+Post Deployment Tasks
+
+[overcloud-controller]
+
+[heat-admin@overcloud-controller-0 ~]$ sudo ovs-vsctl show | grep -A10 br-ex
+        Port int-br-ex
+            Interface int-br-ex
+                type: patch
+                options: {peer=phy-br-ex}
+        Port patch-tun
+            Interface patch-tun
+                type: patch
+                options: {peer=patch-int}
+        Port br-int
+            Interface br-int
+                type: internal
+    Bridge br-ex
+        Controller "tcp:127.0.0.1:6633"
+            is_connected: true
+        fail_mode: secure
+        Port phy-br-ex
+            Interface phy-br-ex
+                type: patch
+                options: {peer=int-br-ex}
+        Port br-ex
+            Interface br-ex
+                type: internal
+        Port "eth0"
+            Interface "eth0"
+    ovs_version: "2.6.1"
+
+
+
+
+[heat-admin@overcloud-controller-0 ~]$ ip addr show dev br-ex
+6: br-ex: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UNKNOWN qlen 1000
+    link/ether 52:54:00:b3:3b:be brd ff:ff:ff:ff:ff:ff
+    inet 172.16.0.31/24 brd 172.16.0.255 scope global dynamic br-ex
+       valid_lft 71883sec preferred_lft 71883sec
+    inet 172.16.0.24/32 brd 172.16.0.255 scope global br-ex
+       valid_lft forever preferred_lft forever
+    inet6 fe80::5054:ff:feb3:3bbe/64 scope link 
+       valid_lft forever preferred_lft forever
+       
+       
+ [heat-admin@overcloud-controller-0 ~]$ neutron net-create management --router:external --provider:network_type flat --provider:physical_network datacentre
+neutron CLI is deprecated and will be removed in the future. Use openstack CLI instead.
+Created a new network:
++---------------------------+--------------------------------------+
+| Field                     | Value                                |
++---------------------------+--------------------------------------+
+| admin_state_up            | True                                 |
+| availability_zone_hints   |                                      |
+| availability_zones        |                                      |
+| created_at                | 2018-03-11T03:05:48Z                 |
+| description               |                                      |
+| id                        | 1dc35223-bb0a-44aa-ae0a-c7b842c1e72f |
+| ipv4_address_scope        |                                      |
+| ipv6_address_scope        |                                      |
+| is_default                | False                                |
+| mtu                       | 1500                                 |
+| name                      | management                           |
+| port_security_enabled     | True                                 |
+| project_id                | 11e5a9523d7346d5b46f1b65e826ef91     |
+| provider:network_type     | flat                                 |
+| provider:physical_network | datacentre                           |
+| provider:segmentation_id  |                                      |
+| qos_policy_id             |                                      |
+| revision_number           | 4                                    |
+| router:external           | True                                 |
+| shared                    | False                                |
+| status                    | ACTIVE                               |
+| subnets                   |                                      |
+| tags                      |                                      |
+| tenant_id                 | 11e5a9523d7346d5b46f1b65e826ef91     |
+| updated_at                | 2018-03-11T03:05:48Z                 |
++---------------------------+--------------------------------------+
+
+
+
+[heat-admin@overcloud-controller-0 ~]$ neutron subnet-create management 172.16.0.0/24 --name management_subnet --enable-dhcp=False --allocation-pool start=172.16.0.210,end=172.16.0.230 --dns-nameserver 8.8.8.8
+neutron CLI is deprecated and will be removed in the future. Use openstack CLI instead.
+Created a new subnet:
++-------------------+--------------------------------------------------+
+| Field             | Value                                            |
++-------------------+--------------------------------------------------+
+| allocation_pools  | {"start": "172.16.0.210", "end": "172.16.0.230"} |
+| cidr              | 172.16.0.0/24                                    |
+| created_at        | 2018-03-11T03:11:38Z                             |
+| description       |                                                  |
+| dns_nameservers   | 8.8.8.8                                          |
+| enable_dhcp       | False                                            |
+| gateway_ip        | 172.16.0.1                                       |
+| host_routes       |                                                  |
+| id                | a97933ff-d7cb-43ae-82dd-dfa5064ee63d             |
+| ip_version        | 4                                                |
+| ipv6_address_mode |                                                  |
+| ipv6_ra_mode      |                                                  |
+| name              | management_subnet                                |
+| network_id        | 1dc35223-bb0a-44aa-ae0a-c7b842c1e72f             |
+| project_id        | 11e5a9523d7346d5b46f1b65e826ef91                 |
+| revision_number   | 2                                                |
+| service_types     |                                                  |
+| subnetpool_id     |                                                  |
+| tags              |                                                  |
+| tenant_id         | 11e5a9523d7346d5b46f1b65e826ef91                 |
+| updated_at        | 2018-03-11T03:11:38Z                             |
++-------------------+--------------------------------------------------+
+
+
+
+[heat-admin@overcloud-controller-0 ~]$ openstack network create internal
++---------------------------+--------------------------------------+
+| Field                     | Value                                |
++---------------------------+--------------------------------------+
+| admin_state_up            | UP                                   |
+| availability_zone_hints   |                                      |
+| availability_zones        |                                      |
+| created_at                | 2018-03-11T03:25:39Z                 |
+| description               |                                      |
+| dns_domain                | None                                 |
+| id                        | 8182a86b-e84f-4af3-8876-cccf6d5e3680 |
+| ipv4_address_scope        | None                                 |
+| ipv6_address_scope        | None                                 |
+| is_default                | None                                 |
+| mtu                       | 1450                                 |
+| name                      | internal                             |
+| port_security_enabled     | True                                 |
+| project_id                | 11e5a9523d7346d5b46f1b65e826ef91     |
+| provider:network_type     | vxlan                                |
+| provider:physical_network | None                                 |
+| provider:segmentation_id  | 79                                   |
+| qos_policy_id             | None                                 |
+| revision_number           | 3                                    |
+| router:external           | Internal                             |
+| segments                  | None                                 |
+| shared                    | False                                |
+| status                    | ACTIVE                               |
+| subnets                   |                                      |
+| updated_at                | 2018-03-11T03:25:39Z                 |
++---------------------------+--------------------------------------+
+
+
+
+
+[heat-admin@overcloud-controller-0 ~]$ neutron subnet-create internal 192.168.0.0/24 --name internal_subnet
+neutron CLI is deprecated and will be removed in the future. Use openstack CLI instead.
+Created a new subnet:
++-------------------+--------------------------------------------------+
+| Field             | Value                                            |
++-------------------+--------------------------------------------------+
+| allocation_pools  | {"start": "192.168.0.2", "end": "192.168.0.254"} |
+| cidr              | 192.168.0.0/24                                   |
+| created_at        | 2018-03-11T03:32:35Z                             |
+| description       |                                                  |
+| dns_nameservers   |                                                  |
+| enable_dhcp       | True                                             |
+| gateway_ip        | 192.168.0.1                                      |
+| host_routes       |                                                  |
+| id                | 2c252ea0-cdd1-41fe-849a-44de3c153b1e             |
+| ip_version        | 4                                                |
+| ipv6_address_mode |                                                  |
+| ipv6_ra_mode      |                                                  |
+| name              | internal_subnet                                  |
+| network_id        | 8182a86b-e84f-4af3-8876-cccf6d5e3680             |
+| project_id        | 11e5a9523d7346d5b46f1b65e826ef91                 |
+| revision_number   | 2                                                |
+| service_types     |                                                  |
+| subnetpool_id     |                                                  |
+| tags              |                                                  |
+| tenant_id         | 11e5a9523d7346d5b46f1b65e826ef91                 |
+| updated_at        | 2018-03-11T03:32:35Z                             |
++-------------------+--------------------------------------------------+
+
+
+
+[heat-admin@overcloud-controller-0 ~]$ openstack router create internal_router
++-------------------------+--------------------------------------+
+| Field                   | Value                                |
++-------------------------+--------------------------------------+
+| admin_state_up          | UP                                   |
+| availability_zone_hints |                                      |
+| availability_zones      |                                      |
+| created_at              | 2018-03-11T03:36:25Z                 |
+| description             |                                      |
+| distributed             | False                                |
+| external_gateway_info   | None                                 |
+| flavor_id               | None                                 |
+| ha                      | True                                 |
+| id                      | 95b4db57-0568-4675-b871-79d9c62284bd |
+| name                    | internal_router                      |
+| project_id              | 11e5a9523d7346d5b46f1b65e826ef91     |
+| revision_number         | None                                 |
+| routes                  |                                      |
+| status                  | ACTIVE                               |
+| updated_at              | 2018-03-11T03:36:25Z                 |
++-------------------------+--------------------------------------+
+
+
+[heat-admin@overcloud-controller-0 ~]$ neutron router-gateway-set internal_router management
+neutron CLI is deprecated and will be removed in the future. Use openstack CLI instead.
+Set gateway for router internal_router
+
+
+[heat-admin@overcloud-controller-0 ~]$ neutron router-interface-add internal_router internal_subnet
+neutron CLI is deprecated and will be removed in the future. Use openstack CLI instead.
+Added interface 0d61aa35-1337-4f27-8469-d0431251c1bc to router internal_router.
+
+
+
+[stack@undercloud tmp]$ curl -o /tmp/cirros.qcow2  http://download.cirros-cloud.net/0.4.0/cirros-0.4.0-x86_64-disk.img
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100 12.1M  100 12.1M    0     0  2502k      0  0:00:04  0:00:04 --:--:-- 2608k
+[stack@undercloud tmp]$ scp /tmp/cirros.qcow2 heat-admin@172.16.0.24:/tmp
+cirros.qcow2                                                                                                                                                                     100%   12MB  49.0MB/s   00:00    
+[stack@undercloud tmp]$ ssh heat-admin@172.16.0.24
+Last login: Sun Mar 11 02:50:39 2018 from gateway
+
+
+
+[heat-admin@overcloud-controller-0 ~]$ openstack image create cirros --disk-format qcow2 --container-format bare --public  --file /tmp/cirros.qcow2
++------------------+------------------------------------------------------------------------------+
+| Field            | Value                                                                        |
++------------------+------------------------------------------------------------------------------+
+| checksum         | 443b7623e27ecf03dc9e01ee93f67afe                                             |
+| container_format | bare                                                                         |
+| created_at       | 2018-03-11T04:40:27Z                                                         |
+| disk_format      | qcow2                                                                        |
+| file             | /v2/images/daf6f478-3efc-462c-af90-7eb07661e6a3/file                         |
+| id               | daf6f478-3efc-462c-af90-7eb07661e6a3                                         |
+| min_disk         | 0                                                                            |
+| min_ram          | 0                                                                            |
+| name             | cirros                                                                       |
+| owner            | 11e5a9523d7346d5b46f1b65e826ef91                                             |
+| properties       | direct_url='swift+config://ref1/glance/daf6f478-3efc-462c-af90-7eb07661e6a3' |
+| protected        | False                                                                        |
+| schema           | /v2/schemas/image                                                            |
+| size             | 12716032                                                                     |
+| status           | active                                                                       |
+| tags             |                                                                              |
+| updated_at       | 2018-03-11T04:40:32Z                                                         |
+| virtual_size     | None                                                                         |
+| visibility       | public                                                                       |
++------------------+------------------------------------------------------------------------------+
+
+
+
+
+
+[heat-admin@overcloud-controller-0 ~]$ openstack image list
++--------------------------------------+--------+--------+
+| ID                                   | Name   | Status |
++--------------------------------------+--------+--------+
+| daf6f478-3efc-462c-af90-7eb07661e6a3 | cirros | active |
++--------------------------------------+--------+--------+
+
+
+
+
+
+
+
+       
+       
+
+
+
+
+
+
+
+
