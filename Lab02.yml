@@ -362,14 +362,8 @@ Successfully registered node UUID a39ec4af-7326-407f-b0ba-c1e7ec10d921
 | aa936fd0-44b4-43e2-a8af-6498c4693945 | overcloud-ceph03    | None          | power off   | available          | False       |
 | a39ec4af-7326-407f-b0ba-c1e7ec10d921 | overcloud-networker | None          | power off   | available          | False       |
 +--------------------------------------+---------------------+---------------+-------------+--------------------+-------------+
-[stack@undercloud ~]$ 
-[stack@undercloud ~]$ 
-[stack@undercloud ~]$ 
-[stack@undercloud ~]$ 
-[stack@undercloud ~]$ for i in $(openstack baremetal node list -c Name -f value; do openstack baremetal node manage $i; done
-> 
-> ^C
-[stack@undercloud ~]$ #for i in $(openstack baremetal node list -c Name -f value); do openstack baremetal node manage $i; done
+
+
 [stack@undercloud ~]$ for i in $(openstack baremetal node list -c Name -f value); do openstack baremetal node manage $i; done
 [stack@undercloud ~]$ openstack baremetal node list
 +--------------------------------------+---------------------+---------------+-------------+--------------------+-------------+
