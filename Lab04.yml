@@ -317,8 +317,104 @@ Last login: Sun Mar 11 02:50:39 2018 from gateway
 
 
 
+[stack@undercloud ~]$ internal_net=$(openstack network show internal -c id -f value)
+[stack@undercloud ~]$ openstack server create overcloud-demo-1 --image cirros --flavor m1.tiny --nic net-id=$internal_net
++-------------------------------------+------------------------------------------------+
+| Field                               | Value                                          |
++-------------------------------------+------------------------------------------------+
+| OS-DCF:diskConfig                   | MANUAL                                         |
+| OS-EXT-AZ:availability_zone         |                                                |
+| OS-EXT-SRV-ATTR:host                | None                                           |
+| OS-EXT-SRV-ATTR:hypervisor_hostname | None                                           |
+| OS-EXT-SRV-ATTR:instance_name       |                                                |
+| OS-EXT-STS:power_state              | NOSTATE                                        |
+| OS-EXT-STS:task_state               | scheduling                                     |
+| OS-EXT-STS:vm_state                 | building                                       |
+| OS-SRV-USG:launched_at              | None                                           |
+| OS-SRV-USG:terminated_at            | None                                           |
+| accessIPv4                          |                                                |
+| accessIPv6                          |                                                |
+| addresses                           |                                                |
+| adminPass                           | a4Kij4wgtQar                                   |
+| config_drive                        |                                                |
+| created                             | 2018-03-11T21:57:07Z                           |
+| flavor                              | m1.tiny (9de74b63-6e93-4b4d-9f69-68a2cc2aaefe) |
+| hostId                              |                                                |
+| id                                  | 784a8deb-4e2c-417c-9aef-70d4052a34de           |
+| image                               | cirros (448befe2-27ce-426a-9867-cd35c61a2ae3)  |
+| key_name                            | None                                           |
+| name                                | overcloud-demo-1                               |
+| progress                            | 0                                              |
+| project_id                          | 96ead1661cdf4adeb6262b0506b2f171               |
+| properties                          |                                                |
+| security_groups                     | name='default'                                 |
+| status                              | BUILD                                          |
+| updated                             | 2018-03-11T21:57:07Z                           |
+| user_id                             | 6eaebf1c96d946c390b856f2bfd29812               |
+| volumes_attached                    |                                                |
++-------------------------------------+------------------------------------------------+
 
 
+[stack@undercloud ~]$ openstack ip floating create management
+This command has been deprecated. Please use "floating ip create" instead.
++---------------------+--------------------------------------+
+| Field               | Value                                |
++---------------------+--------------------------------------+
+| created_at          | 2018-03-11T21:59:25Z                 |
+| description         |                                      |
+| fixed_ip_address    | None                                 |
+| floating_ip_address | 172.16.0.211                         |
+| floating_network_id | c1ed8dde-9bee-4cb0-8a10-3d891fd13478 |
+| id                  | b7873dde-e685-451c-b9af-b7875932a495 |
+| name                | None                                 |
+| port_id             | None                                 |
+| project_id          | 96ead1661cdf4adeb6262b0506b2f171     |
+| revision_number     | 1                                    |
+| router_id           | None                                 |
+| status              | DOWN                                 |
+| updated_at          | 2018-03-11T21:59:25Z                 |
++---------------------+--------------------------------------+
+
+
+[stack@undercloud ~]$ openstack ip floating add 172.16.0.211 overcloud-demo-1 
+This command has been deprecated. Please use "server add floating ip" instead.
+
+
+Editar politicas ICMPI y p 22 desde web.
+
+
+
+[stack@undercloud ~]$ ping 172.16.0.211
+PING 172.16.0.211 (172.16.0.211) 56(84) bytes of data.
+^C
+--- 172.16.0.211 ping statistics ---
+31 packets transmitted, 0 received, 100% packet loss, time 30002ms
+
+[stack@undercloud ~]$ openstack security group rule create default --dst-port 22
+More than one SecurityGroup exists with the name 'default'.
+[stack@undercloud ~]$ openstack security group rule create default --proto icmp
+More than one SecurityGroup exists with the name 'default'.
+[stack@undercloud ~]$ ping -c3 172.16.0.211
+PING 172.16.0.211 (172.16.0.211) 56(84) bytes of data.
+
+--- 172.16.0.211 ping statistics ---
+3 packets transmitted, 0 received, 100% packet loss, time 1999ms
+
+[stack@undercloud ~]$ ping -c3 172.16.0.211
+PING 172.16.0.211 (172.16.0.211) 56(84) bytes of data.
+64 bytes from 172.16.0.211: icmp_seq=1 ttl=63 time=1.52 ms
+64 bytes from 172.16.0.211: icmp_seq=2 ttl=63 time=0.661 ms
+64 bytes from 172.16.0.211: icmp_seq=3 ttl=63 time=1.16 ms
+
+--- 172.16.0.211 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2002ms
+rtt min/avg/max/mdev = 0.661/1.119/1.529/0.358 ms
+
+
+login as 'cirros' user. default password: 'gocubsgo'. use 'sudo' for root.
+[stack@undercloud ~]$ ssh cirros@172.16.0.211 uname -a
+cirros@172.16.0.211's password: 
+Linux overcloud-demo-1 4.4.0-28-generic #47-Ubuntu SMP Fri Jun 24 10:09:13 UTC 2016 x86_64 GNU/Linux
 
 
        
